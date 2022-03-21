@@ -1,15 +1,7 @@
-# Basic Sample Hardhat Project
+#MercuryDAO
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+[DEV doc](https://docs.google.com/document/d/1BSLA6qZ9Ep0fwqCbknCfvFvMhRtcOPFp_UpcPEnlJ1c/edit)
 
-Try running some of the following tasks:
+[MVP[1] description](https://ankrnetwork.atlassian.net/wiki/spaces/MER/pages/edit-v2/1946222615?draftShareId=3f9f29b8-8540-478b-badb-ef22e0caaeb7&inEditorTemplatesPanel=auto_closed)
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
-```
+[MercuryDAO flow](https://app.diagrams.net/#G1AXTmtSdjQN0cNxo9epERkFXT2GzhdmsW)

@@ -27,7 +27,7 @@ contract Usb {
     function rely(address guy) external auth { wards[guy] = 1; }
     function deny(address guy) external auth { wards[guy] = 0; }
     modifier auth {
-        require(wards[msg.sender] == 1, "Dai/not-authorized");
+        require(wards[msg.sender] == 1, "Usb/not-authorized");
         _;
     }
 
@@ -44,6 +44,14 @@ contract Usb {
 
     event Approval(address indexed src, address indexed guy, uint wad);
     event Transfer(address indexed src, address indexed dst, uint wad);
+
+    // --- Math ---
+    function add(uint x, uint y) internal pure returns (uint z) {
+        require((z = x + y) >= x);
+    }
+    function sub(uint x, uint y) internal pure returns (uint z) {
+        require((z = x - y) <= x);
+    }
 
     // --- EIP712 niceties ---
     bytes32 public DOMAIN_SEPARATOR;
@@ -68,29 +76,29 @@ contract Usb {
     function transferFrom(address src, address dst, uint wad)
         public returns (bool)
     {
-        require(balanceOf[src] >= wad, "Dai/insufficient-balance");
+        require(balanceOf[src] >= wad, "Usb/insufficient-balance");
         if (src != msg.sender && allowance[src][msg.sender] != type(uint256).max) {
-            require(allowance[src][msg.sender] >= wad, "Dai/insufficient-allowance");
-            allowance[src][msg.sender] -= wad;
+            require(allowance[src][msg.sender] >= wad, "Usb/insufficient-allowance");
+            allowance[src][msg.sender] = sub(allowance[src][msg.sender], wad);
         }
-        balanceOf[src] -= wad;
-        balanceOf[dst] += wad;
+        balanceOf[src] = sub(balanceOf[src], wad);
+        balanceOf[dst] = add(balanceOf[dst], wad);
         emit Transfer(src, dst, wad);
         return true;
     }
     function mint(address usr, uint wad) external auth {
-        balanceOf[usr] += wad;
-        totalSupply    += wad;
+        balanceOf[usr] = add(balanceOf[usr], wad);
+        totalSupply    = add(totalSupply, wad);
         emit Transfer(address(0), usr, wad);
     }
     function burn(address usr, uint wad) external {
-        require(balanceOf[usr] >= wad, "Dai/insufficient-balance");
+        require(balanceOf[usr] >= wad, "Usb/insufficient-balance");
         if (usr != msg.sender && allowance[usr][msg.sender] != type(uint256).max) {
-            require(allowance[usr][msg.sender] >= wad, "Dai/insufficient-allowance");
-            allowance[usr][msg.sender] -= wad;
+            require(allowance[usr][msg.sender] >= wad, "Usb/insufficient-allowance");
+            allowance[usr][msg.sender] = sub(allowance[usr][msg.sender], wad);
         }
-        balanceOf[usr] -= wad;
-        totalSupply    -= wad;
+        balanceOf[usr] = sub(balanceOf[usr], wad);
+        totalSupply    = sub(totalSupply, wad);
         emit Transfer(usr, address(0), wad);
     }
     function approve(address usr, uint wad) external returns (bool) {
@@ -126,10 +134,10 @@ contract Usb {
                                      allowed))
         ));
 
-        require(holder != address(0), "Dai/invalid-address-0");
-        require(holder == ecrecover(digest, v, r, s), "Dai/invalid-permit");
-        require(expiry == 0 || block.timestamp <= expiry, "Dai/permit-expired");
-        require(nonce == nonces[holder]++, "Dai/invalid-nonce");
+        require(holder != address(0), "Usb/invalid-address-0");
+        require(holder == ecrecover(digest, v, r, s), "Usb/invalid-permit");
+        require(expiry == 0 || block.timestamp <= expiry, "Usb/permit-expired");
+        require(nonce == nonces[holder]++, "Usb/invalid-nonce");
         uint wad = allowed ? type(uint256).max : 0;
         allowance[holder][spender] = wad;
         emit Approval(holder, spender, wad);

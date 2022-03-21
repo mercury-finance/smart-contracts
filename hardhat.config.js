@@ -1,21 +1,62 @@
+require("dotenv").config();
+require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
+require("hardhat-gas-reporter");
+require('hardhat-contract-sizer');
+require("solidity-coverage");
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
-
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
-
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
 module.exports = {
-  solidity: "0.8.4",
+	solidity: {
+		compilers: [
+			{
+				version: '0.8.10',
+				settings: {
+					optimizer: {
+						enabled: true,
+						runs: 100
+					}
+				}
+			},
+		]
+	},
+	
+	networks: {
+		hardhat: {
+      // allowUnlimitedContractSize: true,
+			forking: {
+				url: "https://rpc.ftm.tools",
+				accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
+				blockNumber: 32968090
+			}
+		},
+    bsc: {
+      url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS_PROJECT_ID}/bsc/mainnet`,
+      chainId: 56,
+      accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`]
+    },
+    bsc_testnet: {
+      url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS_PROJECT_ID}/bsc/testnet`,
+      chainId: 97,
+      accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`]
+    },
+	},
+
+	etherscan: {
+		apiKey: process.env.FANTOMSCAN_API_KEY
+	},
+
+	mocha: {
+		grep: '^(?!.*; using Ganache).*'
+	},
+
+  contractSizer: {
+      alphaSort: true,
+      runOnCompile: true,
+      disambiguatePaths: false,
+  },
+
+  gasReporter: {
+    enabled: process.env.REPORT_GAS ? true : false,
+    currency: 'USD',
+  },
 };

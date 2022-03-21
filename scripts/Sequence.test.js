@@ -12,7 +12,7 @@ async function main() {
   // Deploy in sequence
   const vat = await Vat.deploy();
   await vat.deployed();
-  const usb = await Usb.deploy(250);
+  const usb = await Usb.deploy(97);
   await usb.deployed();
 
   // Print out all the deployed addresses

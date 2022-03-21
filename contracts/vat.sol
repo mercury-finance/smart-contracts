@@ -86,6 +86,15 @@ contract Vat {
         require(int(x) >= 0);
         require(y == 0 || z / y == int(x));
     }
+    function add(uint x, uint y) internal pure returns (uint z) {
+        require((z = x + y) >= x);
+    }
+    function sub(uint x, uint y) internal pure returns (uint z) {
+        require((z = x - y) <= x);
+    }
+    function mul(uint x, uint y) internal pure returns (uint z) {
+        require(y == 0 || (z = x * y) / y == x);
+    }
 
     // --- Administration ---
     function init(bytes32 ilk) external auth {
@@ -114,13 +123,13 @@ contract Vat {
     }
     function flux(bytes32 ilk, address src, address dst, uint256 wad) external {
         require(wish(src, msg.sender), "Vat/not-allowed");
-        gem[ilk][src] -= wad;
-        gem[ilk][dst] += wad;
+        gem[ilk][src] = sub(gem[ilk][src], wad);
+        gem[ilk][dst] = add(gem[ilk][dst], wad);
     }
     function move(address src, address dst, uint256 rad) external {
         require(wish(src, msg.sender), "Vat/not-allowed");
-        dai[src] -= rad;
-        dai[dst] += rad;
+        dai[src] = sub(dai[src], rad);
+        dai[dst] = add(dai[dst], rad);
     }
 
     function either(bool x, bool y) internal pure returns (bool z) {
@@ -145,13 +154,13 @@ contract Vat {
         ilk.Art = add(ilk.Art, dart);
 
         int dtab = mul(ilk.rate, dart);
-        uint tab = ilk.rate * urn.art;
+        uint tab = mul(ilk.rate, urn.art);
         debt     = add(debt, dtab);
 
         // either debt has decreased, or debt ceilings are not exceeded
-        require(either(dart <= 0, both(ilk.Art * ilk.rate <= ilk.line, debt <= Line)), "Vat/ceiling-exceeded");
+        require(either(dart <= 0, both(mul(ilk.Art, ilk.rate) <= ilk.line, debt <= Line)), "Vat/ceiling-exceeded");
         // urn is either less risky than before, or it is safe
-        require(either(both(dart <= 0, dink >= 0), tab <= urn.ink * ilk.spot), "Vat/not-safe");
+        require(either(both(dart <= 0, dink >= 0), tab <= mul(urn.ink, ilk.spot)), "Vat/not-safe");
 
         // urn is either more safe, or the owner consents
         require(either(both(dart <= 0, dink >= 0), wish(u, msg.sender)), "Vat/not-allowed-u");
@@ -180,15 +189,15 @@ contract Vat {
         v.ink = add(v.ink, dink);
         v.art = add(v.art, dart);
 
-        uint utab = u.art * i.rate;
-        uint vtab = v.art * i.rate;
+        uint utab = mul(u.art, i.rate);
+        uint vtab = mul(v.art, i.rate);
 
         // both sides consent
         require(both(wish(src, msg.sender), wish(dst, msg.sender)), "Vat/not-allowed");
 
         // both sides safe
-        require(utab <= u.ink * i.spot, "Vat/not-safe-src");
-        require(vtab <= v.ink* i.spot, "Vat/not-safe-dst");
+        require(utab <= mul(u.ink, i.spot), "Vat/not-safe-src");
+        require(vtab <= mul(v.ink, i.spot), "Vat/not-safe-dst");
 
         // both sides non-dusty
         require(either(utab >= i.dust, u.art == 0), "Vat/dust-src");
@@ -213,16 +222,16 @@ contract Vat {
     // --- Settlement ---
     function heal(uint rad) external {
         address u = msg.sender;
-        sin[u] -= rad;
-        dai[u] -= rad;
-        vice   -= rad;
-        debt   -= rad;
+        sin[u] = sub(sin[u], rad);
+        dai[u] = sub(dai[u], rad);
+        vice   = sub(vice,   rad);
+        debt   = sub(debt,   rad);
     }
     function suck(address u, address v, uint rad) external auth {
-        sin[u] += rad;
-        dai[v] += rad;
-        vice   += rad;
-        debt   += rad;
+        sin[u] = add(sin[u], rad);
+        dai[v] = add(dai[v], rad);
+        vice   = add(vice,   rad);
+        debt   = add(debt,   rad);
     }
 
     // --- Rates ---

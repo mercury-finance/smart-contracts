@@ -42,7 +42,10 @@ module.exports = {
 	},
 
 	etherscan: {
-		apiKey: process.env.FANTOMSCAN_API_KEY
+		apiKey: {
+			bsc: process.env.BSC_API_KEY,
+			bscTestnet: process.env.BSC_API_KEY
+		}
 	},
 
 	mocha: {

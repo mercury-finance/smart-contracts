@@ -17,10 +17,6 @@
 
 pragma solidity ^0.8.10;
 
-// FIXME: This contract was altered compared to the production version.
-// It doesn't use LibNote anymore.
-// New deployments of this contract will need to include custom events (TO DO).
-
 interface VatLike {
     function file(bytes32, bytes32, uint) external;
 }
@@ -60,7 +56,7 @@ contract Spotter {
     );
 
     // --- Init ---
-    constructor(address vat_) public {
+    constructor(address vat_) {
         wards[msg.sender] = 1;
         vat = VatLike(vat_);
         par = ONE;
@@ -73,6 +69,7 @@ contract Spotter {
     function mul(uint x, uint y) internal pure returns (uint z) {
         require(y == 0 || (z = x * y) / y == x);
     }
+
     function rdiv(uint x, uint y) internal pure returns (uint z) {
         z = mul(x, ONE) / y;
     }

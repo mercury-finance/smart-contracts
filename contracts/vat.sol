@@ -56,7 +56,7 @@ contract Vat {
     mapping (bytes32 => Ilk)                       public ilks;
     mapping (bytes32 => mapping (address => Urn )) public urns;
     mapping (bytes32 => mapping (address => uint)) public gem;  // [wad]
-    mapping (address => uint256)                   public dai;  // [rad]
+    mapping (address => uint256)                   public usb;  // [rad]
     mapping (address => uint256)                   public sin;  // [rad]
 
     uint256 public debt;  // Total Dai Issued    [rad]
@@ -128,8 +128,8 @@ contract Vat {
     }
     function move(address src, address dst, uint256 rad) external {
         require(wish(src, msg.sender), "Vat/not-allowed");
-        dai[src] = sub(dai[src], rad);
-        dai[dst] = add(dai[dst], rad);
+        usb[src] = sub(usb[src], rad);
+        usb[dst] = add(usb[dst], rad);
     }
 
     function either(bool x, bool y) internal pure returns (bool z) {
@@ -173,7 +173,7 @@ contract Vat {
         require(either(urn.art == 0, tab >= ilk.dust), "Vat/dust");
 
         gem[i][v] = sub(gem[i][v], dink);
-        dai[w]    = add(dai[w],    dtab);
+        usb[w]    = add(usb[w],    dtab);
 
         urns[i][u] = urn;
         ilks[i]    = ilk;
@@ -223,13 +223,13 @@ contract Vat {
     function heal(uint rad) external {
         address u = msg.sender;
         sin[u] = sub(sin[u], rad);
-        dai[u] = sub(dai[u], rad);
+        usb[u] = sub(usb[u], rad);
         vice   = sub(vice,   rad);
         debt   = sub(debt,   rad);
     }
     function suck(address u, address v, uint rad) external auth {
         sin[u] = add(sin[u], rad);
-        dai[v] = add(dai[v], rad);
+        usb[v] = add(usb[v], rad);
         vice   = add(vice,   rad);
         debt   = add(debt,   rad);
     }
@@ -240,7 +240,7 @@ contract Vat {
         Ilk storage ilk = ilks[i];
         ilk.rate = add(ilk.rate, rate);
         int rad  = mul(ilk.Art, rate);
-        dai[u]   = add(dai[u], rad);
+        usb[u]   = add(usb[u], rad);
         debt     = add(debt,   rad);
     }
 }

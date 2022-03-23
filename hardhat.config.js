@@ -21,14 +21,14 @@ module.exports = {
 	},
 	
 	networks: {
-		hardhat: {
-      // allowUnlimitedContractSize: true,
-			forking: {
-				url: "https://rpc.ftm.tools",
-				accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
-				blockNumber: 32968090
-			}
-		},
+		// hardhat: {
+      // // allowUnlimitedContractSize: true,
+		// 	forking: {
+		// 		url: "https://rpc.ftm.tools",
+		// 		accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
+		// 		blockNumber: 32968090
+		// 	}
+		// },
     bsc: {
       url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS_PROJECT_ID}/bsc/mainnet`,
       chainId: 56,

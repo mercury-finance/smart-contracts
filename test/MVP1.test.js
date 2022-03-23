@@ -2,6 +2,7 @@ const { expect } = require('chai');
 const { BigNumber } = require('ethers');
 const { ethers } = require('hardhat');
 const Web3 = require('web3');
+const {ether, expectRevert, BN, expectEvent} = require('@openzeppelin/test-helpers');
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -105,15 +106,22 @@ describe('===MVP1===', function () {
 
     it('should check collateralization and borrowing Usb', async function () {
 
+        let s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
+        expect(s1Balance).to.equal("0");
         // Signer1 and Signer2 have some aBNBc
         await abnbc.connect(deployer).mint(signer1.address, ethers.utils.parseEther("5000"));
         await abnbc.connect(deployer).mint(signer2.address, ethers.utils.parseEther("5000"));
 
+        s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
+        expect(s1Balance).to.equal(ether("5000").toString());
         // Signer1 and Signer2 entered the system with 400 and 900 each (Unlocked Collateral)
         await abnbc.connect(signer1).approve(gemJoin.address, ethers.utils.parseEther("400"));
         await gemJoin.connect(signer1).join(signer1.address, ethers.utils.parseEther("400"));
         await abnbc.connect(signer2).approve(gemJoin.address, ethers.utils.parseEther("900"));
         await gemJoin.connect(signer2).join(signer1.address, ethers.utils.parseEther("900"));
+
+        s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
+        expect(s1Balance).to.equal(ether("4600").toString());
 
         
 

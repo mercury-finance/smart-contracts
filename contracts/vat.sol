@@ -161,7 +161,7 @@ contract Vat {
         require(either(dart <= 0, both(mul(ilk.Art, ilk.rate) <= ilk.line, debt <= Line)), "Vat/ceiling-exceeded");
         // urn is either less risky than before, or it is safe
         require(either(both(dart <= 0, dink >= 0), tab <= mul(urn.ink, ilk.spot)), "Vat/not-safe");
-
+        
         // urn is either more safe, or the owner consents
         require(either(both(dart <= 0, dink >= 0), wish(u, msg.sender)), "Vat/not-allowed-u");
         // collateral src consents

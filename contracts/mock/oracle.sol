@@ -13,9 +13,9 @@ contract Oracle is Ownable {
     bytes32 public price; 
 
     // Take care of decimals while setting a price for the test
-    function setPrice(bytes32 _price) external onlyOwner {
-        price = _price;
-        emit PriceUpdate(_price);
+    function setPrice(uint256 _price) external onlyOwner {
+        price = bytes32(_price);
+        emit PriceUpdate(bytes32(_price));
     }
 
     function peek() view external returns(bytes32,bool) {

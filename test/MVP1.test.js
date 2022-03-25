@@ -1,6 +1,6 @@
 const { expect } = require('chai');
 const { BigNumber } = require('ethers');
-const { ethers } = require('hardhat');
+const { ethers, network } = require('hardhat');
 const Web3 = require('web3');
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -13,7 +13,7 @@ const DATA = "0x02";
 ///////////////////////////////////////////
 
 describe('===MVP1===', function () {
-    let deployer, signer1, signer2, signer3;
+    let deployer, signer1, signer2, mockVow;
 
     let vat, 
         spot, 
@@ -27,7 +27,9 @@ describe('===MVP1===', function () {
 
     let wad = "000000000000000000", // 18 Decimals
         ray = "000000000000000000000000000", // 27 Decimals
-        rad = "000000000000000000000000000000000000000000000"; // 45 Decimals
+        rad = "000000000000000000000000000000000000000000000", // 45 Decimals
+        ONE = 10 ** 27;
+
 
     let collateral = ethers.utils.formatBytes32String("aBNBc");
 
@@ -37,7 +39,7 @@ describe('===MVP1===', function () {
         /** Deployments ------------ **/
         ////////////////////////////////
 
-        [deployer, signer1, signer2, signer3] = await ethers.getSigners();
+        [deployer, signer1, signer2, mockVow] = await ethers.getSigners();
 
         this.Vat = await ethers.getContractFactory("Vat");
         this.Spot = await ethers.getContractFactory("Spotter");
@@ -88,8 +90,8 @@ describe('===MVP1===', function () {
         await vat.connect(deployer).rely(usbJoin.address);
         await vat.connect(deployer).rely(spot.address);
         await vat.connect(deployer).rely(jug.address);
-        await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "5000" + rad);
-        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "2000" + rad);
+        await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "2000" + rad);
+        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "1200" + rad);
         await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "500" + rad);
 
         await spot.connect(deployer)["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("pip"), oracle.address);
@@ -103,16 +105,37 @@ describe('===MVP1===', function () {
         // Initialize Collateral Module [User should approve gemJoin while joining]
 
         // Initialize Rates Module
-        // ==> principal*(rate**seconds)-principal = 0.01 (We want 1% Yearly "base" interest)
-        // ==> 1 * (R ** 31536000 seconds) - 1 = 0.01
-        // ==> 1*(R**31536000) = 1.01
-        // ==> R**31536000 = 1.01
-        // ==> R = 1.01**(1/31536000)
-        // ==> R = 1.000000000315529215730000000 [ray]
-        await jug.connect(deployer).init(collateral); // Duty on next line already set here, which is 0% yearly. 
-        // await jug.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("duty"), "1" + ray); // 0% Yearly. It needs rho == now
+        // IMPORTANT: Base and Duty are added together first, thus will compound together.
+        //            It is adviced to set a constant base first then duty for all ilks.
+        //            Otherwise, a change in base rate will require a change in all ilks rate.
+        //            Due to addition of both rates, the ratio should be adjusted by factoring.
+        //            rate(Base) + rate(Duty) != rate(Base + Duty)
+
+        // Calculating Base Rate (1% Yearly)
+        // ==> principal*(rate**seconds)-principal = 0.01 (1%)
+        // ==> 1 * (BR ** 31536000 seconds) - 1 = 0.01
+        // ==> 1*(BR**31536000) = 1.01
+        // ==> BR**31536000 = 1.01
+        // ==> BR = 1.01**(1/31536000)
+        // ==> BR = 1.000000000315529215730000000 [ray]
+
+        // Factoring out Ilk Duty Rate (1% Yearly)
+        // ((1 * (BR + 0.000000000312410000000000000 DR)^31536000)-1) * 100 = 0.000000000312410000000000000 = 2% (BR + DR Yearly)
+
         await jug.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("base"), "1000000000315529215730000000"); // 1% Yearly
-        // await jug.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), NULL_ADDRESS);
+        // Setting duty requires now == rho. So Drip then Set, or Init then Set.
+        // await jug.connect(deployer).init(collateral); // Duty by default set here to 1 Ray which is 0%, but added to Base that makes its effect compound
+        // await jug.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("duty"), "0000000000312410000000000000"); // 1% Yearly Factored
+
+        // evm does not support stopping time for now == rho, so we create a mock contract which calls both functions to set duty
+        let batchCaller = await (await (await ethers.getContractFactory("BatchCaller")).connect(deployer).deploy(jug.address)).deployed();
+        await jug.connect(deployer).rely(batchCaller.address);
+        await batchCaller.connect(deployer).jugInitFile(collateral, ethers.utils.formatBytes32String("duty"), "0000000000312410000000000000"); // 1% Yearly Factored
+
+        expect(await(await jug.base()).toString()).to.be.equal("1000000000315529215730000000")
+        expect(await(await(await jug.ilks(collateral)).duty).toString()).to.be.equal("312410000000000000");
+
+        await jug.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), mockVow.address);
     });
 
     it('should check collateralization and borrowing Usb', async function () {
@@ -139,33 +162,56 @@ describe('===MVP1===', function () {
         expect((await vat.connect(deployer).gem(collateral, signer2.address)).toString()).to.be.equal(await (ethers.utils.parseEther("0")).toString());
         expect((await (await vat.connect(deployer).urns(collateral, signer2.address)).ink).toString()).to.be.equal(await (ethers.utils.parseEther("900")).toString());
         
-        // Signer1 and Signer2 borrow Usb respectively [Note: Can be done in a single frob]
+        // Signer1 and Signer2 borrow Usb respectively [Note: Can be done in a single frob collateralize and borrow]
         // Note borrows should be less than "Line/line" and greater than "dust"
-        // Note "dart" in the frob is normalized. dart / ilk.rate = normalized
+        // Note "dart" parameter in the frob is normalized. dart = Usb amount / ilk.rate
         expect((await vat.connect(signer1).usb(signer1.address)).toString()).to.be.equal("0");
         expect((await vat.connect(signer1).debt()).toString()).to.be.equal("0");
         expect((await (await vat.connect(signer1).urns(collateral, signer1.address)).art).toString()).to.be.equal("0");
         expect((await (await vat.connect(signer1).ilks(collateral)).Art).toString()).to.be.equal("0");
                 
-        // await jug.connect(deployer).drip(collateral);
+        // Normalized dart [wad] = amount to borrow / ilk.rate
+        await jug.connect(deployer).drip(collateral);
         let debt_rate = await (await vat.ilks(collateral)).rate;
-        console.log(debt_rate)
-        await vat.connect(signer1).frob(collateral, signer1.address, signer1.address, signer1.address, 0, ethers.utils.parseEther("600")); // 600 USBs
-        await vat.connect(signer2).frob(collateral, signer2.address, signer2.address, signer2.address, 0, ethers.utils.parseEther("900")); // 900 USBs
+        let usb_amount1 = (550000000000000000000 / debt_rate) * ONE;
+        let usb_amount2 = (600000000000000000000 / debt_rate) * ONE;
 
-        expect((await vat.connect(signer1).usb(signer1.address)).toString()).to.be.equal("600" + rad);
-        expect((await vat.connect(signer1).debt()).toString()).to.be.equal("1500" + rad); // 1500 because signer2 added too
-        expect((await (await vat.connect(signer1).urns(collateral, signer1.address)).art).toString()).to.be.equal("600" + wad);
-        expect((await (await vat.connect(signer1).ilks(collateral)).Art).toString()).to.be.equal("1500" + wad); // 1500 because signer2 added too
+        console.log("ILK_RATE      : " + debt_rate.toString());
 
-        // // Update Stability Fees
-        // await jug.connect(deployer).drip(collateral);
-        // // await network.provider.send("evm_increaseTime", [60])
-        // // await jug.connect(deployer).drip(collateral);
+        await vat.connect(signer1).frob(collateral, signer1.address, signer1.address, signer1.address, 0, usb_amount1.toString()); // 550 USBs
+        await vat.connect(signer2).frob(collateral, signer2.address, signer2.address, signer2.address, 0, usb_amount2.toString()); // 600 USBs
 
-        // let rate = await (await vat.ilks(collateral)).rate;
-        // let urnArt = await (await vat.urns(collateral, signer1.address)).art;
-        // console.log(rate + "~" + urnArt)
+        console.log("ink(signer1)  : " + await (await vat.urns(collateral, signer1.address)).ink);
+        console.log("art(signer1)  : " + await (await (await vat.connect(signer1).urns(collateral, signer1.address)).art).toString());
+        console.log("Art           : " + await (await (await vat.connect(signer1).ilks(collateral)).Art).toString());
+        console.log("Usb(signer1)  : " + await (await vat.connect(signer1).usb(signer1.address)).toString());
+        console.log("Debt          : " + await (await vat.connect(signer1).debt()).toString());
 
+        // Update Stability Fees
+        await network.provider.send("evm_increaseTime", [31536000]); // Jump 1 Year
+        await network.provider.send("evm_mine");
+        await jug.connect(deployer).drip(collateral);
+        debt_rate = await (await vat.ilks(collateral)).rate;
+        console.log("---After One Year");
+        console.log("ILK_RATE      : " + debt_rate.toString());
+        console.log("ink(signer1)  : " + await (await vat.urns(collateral, signer1.address)).ink);
+        console.log("art(signer1)  : " + await (await (await vat.connect(signer1).urns(collateral, signer1.address)).art).toString());
+        console.log("Art           : " + await (await (await vat.connect(signer1).ilks(collateral)).Art).toString());
+        console.log("Usb(signer1)  : " + await (await vat.connect(signer1).usb(signer1.address)).toString());
+        console.log("Debt          : " + await (await vat.connect(signer1).debt()).toString());
+        let usbWithStabilityFee = (debt_rate * await (await vat.connect(signer1).urns(collateral, signer1.address)).art) / ONE; // rate * art = usb 
+        let stabilityFee = (usbWithStabilityFee - (await vat.connect(signer1).usb(signer1.address) / ONE)); // S.fee = usbWithStabilityFee - usb
+        console.log("S.Fee(signer1): " + stabilityFee + " (2% After One Year)");
+
+        // Mint ERC20 Usb tokens based on internal Usb(signer1)
+        await vat.connect(signer1).hope(usbJoin.address);
+        expect((await usb.balanceOf(signer1.address)).toString()).to.equal("0");
+        await usbJoin.connect(signer1).exit(signer1.address, ethers.utils.parseEther("300"));
+        expect((await usb.balanceOf(signer1.address)).toString()).to.equal(ethers.utils.parseEther("300").toString());
+
+        // Burn ERC20 Usb tokens to get internal Usb(signer1)
+        await usb.connect(signer1).approve(usbJoin.address, ethers.utils.parseEther("300"))
+        await usbJoin.connect(signer1).join(signer1.address, ethers.utils.parseEther("300"));
+        expect((await usb.balanceOf(signer1.address)).toString()).to.equal("0");
     });
 });

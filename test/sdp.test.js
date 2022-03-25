@@ -99,13 +99,13 @@ describe('===CDP===', function () {
 
         // Initialize Rates Module
         await jug.connect(deployer).init(collateral); // Duty on next line already set here. It needs rho == now
-        // await jug.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("duty"), "1" + ray);
+        // await jug.connect(deployer)["file(bytes3 2,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("duty"), "1" + ray);
         await jug.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("base"), "2" + ray);
         // await jug.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), NULL_ADDRESS);
 
     });
 
-    it('should check collateralization and borrowing Usb', async function () {
+    it('put collaterall and borrow', async function () {
 
         let s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
         expect(s1Balance).to.equal("0");
@@ -154,7 +154,7 @@ describe('===CDP===', function () {
 
         // Need to withdraw newly minted USB to our wallet
         // dart is stored with 45 decimals
-        let radDart = "25000000000000000000000000000000000000000000000";
+        let radDart = "25" + rad;
 
         // Move USB from urn to debt account
         await manager.connect(signer1).move(cdpId, signer1.address, radDart);

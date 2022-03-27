@@ -84,17 +84,23 @@ contract Jug {
     }
     uint256 constant ONE = 10 ** 27;
     function add(uint x, uint y) internal pure returns (uint z) {
-        z = x + y;
-        require(z >= x);
+        unchecked {
+            z = x + y;
+            require(z >= x);
+        }
     }
     function diff(uint x, uint y) internal pure returns (int z) {
-        z = int(x) - int(y);
-        require(int(x) >= 0 && int(y) >= 0);
+        unchecked {
+            z = int(x) - int(y);
+            require(int(x) >= 0 && int(y) >= 0);
+        }
     }
     function rmul(uint x, uint y) internal pure returns (uint z) {
-        z = x * y;
-        require(y == 0 || z / y == x);
-        z = z / ONE;
+        unchecked {
+            z = x * y;
+            require(y == 0 || z / y == x);
+            z = z / ONE;
+        }
     }
 
     // --- Administration ---

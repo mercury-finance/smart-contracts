@@ -159,7 +159,9 @@ contract UsbJoin {
     }
     uint constant ONE = 10 ** 27;
     function mul(uint x, uint y) internal pure returns (uint z) {
-        require(y == 0 || (z = x * y) / y == x);
+        unchecked {
+            require(y == 0 || (z = x * y) / y == x);
+        }
     }
     function join(address usr, uint wad) external {
         vat.move(address(this), usr, mul(ONE, wad));

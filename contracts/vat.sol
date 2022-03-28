@@ -19,6 +19,8 @@
 
 pragma solidity ^0.8.10;
 
+import "hardhat/console.sol";
+
 // FIXME: This contract was altered compared to the production version.
 // It doesn't use LibNote anymore.
 // New deployments of this contract will need to include custom events (TO DO).
@@ -72,7 +74,9 @@ contract Vat {
 
     // --- Math ---
     function add(uint x, int y) internal pure returns (uint z) {
-        z = x + uint(y);
+        unchecked {
+            z = x + uint(y);
+        }
         require(y >= 0 || z <= x);
         require(y <= 0 || z >= x);
     }
@@ -149,13 +153,14 @@ contract Vat {
         // ilk has been initialised
         require(ilk.rate != 0, "Vat/ilk-not-init");
 
-        urn.ink = add(urn.ink, dink);
+        urn.ink = add(urn.ink, dink); 
         urn.art = add(urn.art, dart);
         ilk.Art = add(ilk.Art, dart);
 
         int dtab = mul(ilk.rate, dart);
         uint tab = mul(ilk.rate, urn.art);
         debt     = add(debt, dtab);
+        console.logInt(dtab);
 
         // either debt has decreased, or debt ceilings are not exceeded
         require(either(dart <= 0, both(mul(ilk.Art, ilk.rate) <= ilk.line, debt <= Line)), "Vat/ceiling-exceeded");

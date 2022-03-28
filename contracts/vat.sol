@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-/// vat.sol -- Dai CDP database
+/// vat.sol -- Usb CDP database
 
 // Copyright (C) 2018 Rain <rainbreak@riseup.net>
 //
@@ -61,8 +61,8 @@ contract Vat {
     mapping (address => uint256)                   public usb;  // [rad]
     mapping (address => uint256)                   public sin;  // [rad]
 
-    uint256 public debt;  // Total Dai Issued    [rad]
-    uint256 public vice;  // Total Unbacked Dai  [rad]
+    uint256 public debt;  // Total Usb Issued    [rad]
+    uint256 public vice;  // Total Unbacked Usb  [rad]
     uint256 public Line;  // Total Debt Ceiling  [rad]
     uint256 public live;  // Active Flag
 
@@ -76,28 +76,38 @@ contract Vat {
     function add(uint x, int y) internal pure returns (uint z) {
         unchecked {
             z = x + uint(y);
+            require(y >= 0 || z <= x);
+            require(y <= 0 || z >= x);
         }
-        require(y >= 0 || z <= x);
-        require(y <= 0 || z >= x);
     }
     function sub(uint x, int y) internal pure returns (uint z) {
-        z = x - uint(y);
-        require(y <= 0 || z <= x);
-        require(y >= 0 || z >= x);
+        unchecked {
+            z = x - uint(y);
+            require(y <= 0 || z <= x);
+            require(y >= 0 || z >= x);
+        }
     }
     function mul(uint x, int y) internal pure returns (int z) {
-        z = int(x) * y;
-        require(int(x) >= 0);
-        require(y == 0 || z / y == int(x));
+        unchecked {
+            z = int(x) * y;
+            require(int(x) >= 0);
+            require(y == 0 || z / y == int(x));
+        }
     }
     function add(uint x, uint y) internal pure returns (uint z) {
-        require((z = x + y) >= x);
+        unchecked {
+            require((z = x + y) >= x);
+        }
     }
     function sub(uint x, uint y) internal pure returns (uint z) {
-        require((z = x - y) <= x);
+        unchecked {
+            require((z = x - y) <= x);
+        }
     }
     function mul(uint x, uint y) internal pure returns (uint z) {
-        require(y == 0 || (z = x * y) / y == x);
+        unchecked {
+            require(y == 0 || (z = x * y) / y == x);
+        }
     }
 
     // --- Administration ---

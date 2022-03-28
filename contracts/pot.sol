@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-/// pot.sol -- Dai Savings Rate
+/// pot.sol -- Usb Savings Rate
 
 // Copyright (C) 2018 Rain <rainbreak@riseup.net>
 //
@@ -24,20 +24,20 @@ pragma solidity ^0.8.10;
 // New deployments of this contract will need to include custom events (TO DO).
 
 /*
-   "Savings Dai" is obtained when Dai is deposited into
-   this contract. Each "Savings Dai" accrues Dai interest
-   at the "Dai Savings Rate".
+   "Savings Usb" is obtained when Usb is deposited into
+   this contract. Each "Savings Usb" accrues Usb interest
+   at the "Usb Savings Rate".
 
    This contract does not implement a user tradeable token
    and is intended to be used with adapters.
 
-         --- `save` your `dai` in the `pot` ---
+         --- `save` your `usb` in the `pot` ---
 
-   - `dsr`: the Dai Savings Rate
-   - `pie`: user balance of Savings Dai
+   - `dsr`: the Usb Savings Rate
+   - `pie`: user balance of Savings Usb
 
-   - `join`: start saving some dai
-   - `exit`: remove some dai
+   - `join`: start saving some usb
+   - `exit`: remove some usb
    - `drip`: perform rate collection
 
 */
@@ -58,10 +58,10 @@ contract Pot {
     }
 
     // --- Data ---
-    mapping (address => uint256) public pie;  // Normalised Savings Dai [wad]
+    mapping (address => uint256) public pie;  // Normalised Savings Usb [wad]
 
-    uint256 public Pie;   // Total Normalised Savings Dai  [wad]
-    uint256 public dsr;   // The Dai Savings Rate          [ray]
+    uint256 public Pie;   // Total Normalised Savings Usb  [wad]
+    uint256 public dsr;   // The Usb Savings Rate          [ray]
     uint256 public chi;   // The Rate Accumulator          [ray]
 
     VatLike public vat;   // CDP Engine
@@ -107,19 +107,27 @@ contract Pot {
     }
 
     function rmul(uint x, uint y) internal pure returns (uint z) {
-        z = mul(x, y) / ONE;
+        unchecked {
+            z = mul(x, y) / ONE;
+        }
     }
 
     function add(uint x, uint y) internal pure returns (uint z) {
-        require((z = x + y) >= x);
+        unchecked {
+            require((z = x + y) >= x);
+        }
     }
 
     function sub(uint x, uint y) internal pure returns (uint z) {
-        require((z = x - y) <= x);
+        unchecked {
+            require((z = x - y) <= x);
+        }
     }
 
     function mul(uint x, uint y) internal pure returns (uint z) {
-        require(y == 0 || (z = x * y) / y == x);
+        unchecked {
+            require(y == 0 || (z = x * y) / y == x);
+        }
     }
 
     // --- Administration ---
@@ -150,7 +158,7 @@ contract Pot {
         vat.suck(address(vow), address(this), mul(Pie, chi_));
     }
 
-    // --- Savings Dai Management ---
+    // --- Savings Usb Management ---
     function join(uint wad) external {
         require(block.timestamp == rho, "Pot/rho-not-updated");
         pie[msg.sender] = add(pie[msg.sender], wad);

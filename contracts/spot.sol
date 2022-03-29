@@ -44,7 +44,7 @@ contract Spotter {
     mapping (bytes32 => Ilk) public ilks;
 
     VatLike public vat;  // CDP Engine
-    uint256 public par;  // ref per dai [ray]
+    uint256 public par;  // ref per usb [ray]
 
     uint256 public live;
 
@@ -67,11 +67,15 @@ contract Spotter {
     uint constant ONE = 10 ** 27;
 
     function mul(uint x, uint y) internal pure returns (uint z) {
-        require(y == 0 || (z = x * y) / y == x);
+        unchecked {
+            require(y == 0 || (z = x * y) / y == x);
+        }
     }
 
     function rdiv(uint x, uint y) internal pure returns (uint z) {
-        z = mul(x, ONE) / y;
+        unchecked {
+            z = mul(x, ONE) / y;
+        }
     }
 
     // --- Administration ---

@@ -9,7 +9,7 @@ const {ether, expectRevert, BN, expectEvent} = require('@openzeppelin/test-helpe
 //The test will be updated on daily basis//
 ///////////////////////////////////////////
 
-describe('===MVP1===', function () {
+xdescribe('===MVP1===', function () {
     let deployer, signer1, signer2, mockVow;
 
     let vat,
@@ -138,68 +138,6 @@ describe('===MVP1===', function () {
         expect(await(await(await jug.ilks(collateral)).duty).toString()).to.be.equal("312410000000000000");
 
         await jug.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), mockVow.address);
-    });
-
-    it('put collaterall and borrow', async function () {
-
-        let s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
-        expect(s1Balance).to.equal("0");
-
-        // collateral == "aBNBc" == ilk
-
-        // Open the vault for particular collateral
-        // This function returns cdpId, but it is not accessible in tests
-        await manager.connect(signer1).open(collateral, signer1.address);
-
-        // Retrieve cdpId from cdpManager
-        let cdpId = await manager.connect(signer1).last(signer1.address);
-        console.log("CdpId: " + cdpId.toString());
-
-        // Retrieve user `urn` address.
-        // That's where ink(collateral balance) and art(outstanding stablecoin debt) is registered.
-        let urnId = await manager.connect(signer1).urns(cdpId);
-        console.log("UrnId: " + urnId.toString());
-
-        //Mint some tokens for user
-        await abnbc.connect(deployer).mint(signer1.address, ether("5000").toString());
-        s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
-        expect(s1Balance).to.equal(ether("5000").toString());
-
-
-        // Approve and send some collateral inside. collateral value == 400 == `dink`
-        let dink = ether("400").toString();
-
-        await abnbc.connect(signer1).approve(gemJoin.address, dink);
-        // Join. NOTE the urnId here
-        await gemJoin.connect(signer1).join(urnId, dink);
-        s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
-        expect(s1Balance).to.equal(ether("4600").toString());
-
-        let s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
-        expect(s1USBBalance).to.equal("0");
-
-        // Locking collateral and borrowing USB
-        // We want to draw 25 USB == `dart`
-        let dart = ether("25");
-        await manager.connect(signer1).frob(cdpId, dink, dart.toString());
-
-        // Now we have debt with size `dart`
-        let vatState = await vat.connect(signer1).urns(collateral, urnId);
-        expect(vatState["art"].toString()).to.equal(ether("25").toString());
-
-        // Need to withdraw newly minted USB to our wallet
-        // dart is stored with 45 decimals
-        let radDart = "25" + rad;
-
-        // Move USB from urn to debt account
-        await manager.connect(signer1).move(cdpId, signer1.address, radDart);
-        // Approve USB gem against vat
-        await vat.connect(signer1).hope(usbJoin.address);
-        // Actually transfer USB to user's wallet
-        await usbJoin.connect(signer1).exit(signer1.address, dart.toString());
-
-        s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
-        expect(s1USBBalance).to.equal(ether("25").toString());
     });
 
     it('should check collateralization and borrowing Usb', async function () {

@@ -10,9 +10,10 @@ import {Spotter} from "./spot.sol";
 
 contract DAOInteraction {
 
-//    event VaultCreated(address indexed user, uint256 cdpId, address urnId);
     event Deposit(address indexed user, uint256 amount);
     event Borrow(address indexed user, uint256 amount);
+    event Payback(address indexed user, uint256 amount);
+    event Withdraw(address indexed user, uint256 amount);
 
     Vat public vat;
     Spotter public spot;
@@ -30,7 +31,6 @@ contract DAOInteraction {
         address usb_,
         address abnbcJoin_,
         address usbJoin_) {
-//        __Ownable_init();
 
         vat = Vat(vat_);
         spot = Spotter(spot_);
@@ -42,41 +42,12 @@ contract DAOInteraction {
         ilk = stringToBytes32("aBNBc");
 
         vat.hope(usbJoin_);
+
+        abnbc.approve(abnbcJoin_,
+            115792089237316195423570985008687907853269984665640564039457584007913129639935);
+        usb.approve(usbJoin_,
+            115792089237316195423570985008687907853269984665640564039457584007913129639935);
     }
-//
-//    function openVault() public returns(uint256, address){
-//        uint256 cdpId = manager.last(msg.sender);
-//        if (cdpId == 0) {
-//            cdpId = manager.open(ilk, msg.sender);
-//        }
-//
-//        address urnId = manager.urns(cdpId);
-//        emit VaultCreated(msg.sender, cdpId, urnId);
-//
-//        return (cdpId, urnId);
-//    }
-//
-//    function deposit(uint256 dink) external returns(uint256){
-//        //TODO use view function
-//        (uint256 cdpId, address urnId) = openVault();
-//        abnbc.transferFrom(msg.sender, address(this), dink);
-//        abnbc.approve(address(abnbcJoin), dink);
-//        abnbcJoin.join(urnId, dink);
-//
-//        // TODO rely manager on interaction contract
-////        manager.cdpAllow(cdpId, address(this), 1);
-//
-//        emit Deposit(msg.sender, dink);
-//        return cdpId;
-//    }
-//
-//    function borrow(uint cdpId, uint256 dink, uint256 dart) external {
-//        manager.frob(cdpId, int(dink), int256(dart));
-//        manager.move(cdpId, address(this) , dart * 10**27);
-//        usbJoin.exit(msg.sender, dart);
-//
-//        emit Borrow(msg.sender, dart);
-//    }
 
     function stringToBytes32(string memory source) public pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
@@ -88,7 +59,6 @@ contract DAOInteraction {
             result := mload(add(source, 32))
         }
     }
-
 
     function free(address usr) public view returns (uint256) {
         return vat.gem(ilk, usr);
@@ -111,12 +81,11 @@ contract DAOInteraction {
         (, uint256 rate, uint256 spot,,) = vat.ilks(ilk);
         uint256 collateral = ink * spot;
         uint256 debt = rate * art;
-        return int256(collateral) - int256(debt);
+        return (int256(collateral) - int256(debt)) / 1e27;
     }
 
     function deposit(uint256 dink) external returns (uint256){
         abnbc.transferFrom(msg.sender, address(this), dink);
-        abnbc.approve(address(abnbcJoin), dink);
         abnbcJoin.join(msg.sender, dink);
 
         emit Deposit(msg.sender, dink);
@@ -131,4 +100,18 @@ contract DAOInteraction {
         emit Borrow(msg.sender, dart);
         return dart;
     }
+
+    function payback(uint256 dart) external returns(uint256) {
+        usb.transferFrom(msg.sender, address(this), dart);
+        usbJoin.join(msg.sender, dart);
+        vat.frob(ilk, msg.sender, msg.sender, msg.sender, 0, -int256(dart));
+
+        emit Payback(msg.sender, dart);
+        return dart;
+    }
+
+    function withdraw(uint256 dink) external returns(uint256) {
+        return dink;
+    }
+
 }

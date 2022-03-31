@@ -169,9 +169,26 @@ describe('===INTERACTION===', function () {
         // Borrowed 60$ => available should equal to 640 - 60 = 580.
         let available = await interaction.connect(signer1).availableToBorrow(signer1.address);
         expect(available.toString()).to.equal(ether("580").toString());
+    });
 
-        // Payback
+    it('payback and withdraw', async function() {
+        let dart = ether("60").toString();
 
+        let s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
+        expect(s1USBBalance).to.equal(dart);
+
+        await usb.connect(signer1).approve(interaction.address, dart);
+        await interaction.connect(signer1).payback(dart);
+
+        s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
+        expect(s1USBBalance).to.equal("0");
+        // let ilk = await vat.connect(signer1).ilks(collateral);
+        // console.log(ilk);
+        let available = await interaction.connect(signer1).availableToBorrow(signer1.address);
+        expect(available.toString()).to.equal(ether("640").toString());
+
+        // USB are burned, now we have to withdraw collateral
+        // We will always withdraw all available collateral
 
     });
 });

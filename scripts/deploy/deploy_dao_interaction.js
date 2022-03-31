@@ -36,8 +36,7 @@ async function main() {
             aBNBc,
             USB,
             aBNBcJoin,
-            UsbJoin,
-            MANAGER
+            UsbJoin, 
         ],
     });
     console.log('Finished');

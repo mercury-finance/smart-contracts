@@ -153,7 +153,7 @@ describe('===INTERACTION===', function () {
         await vat.connect(signer1).hope(interaction.address);
 
         let dart = ether("60").toString();
-        await interaction.connect(signer1).borrow(dink, dart);
+        await interaction.connect(signer1).addCollateralAndBorrow(dink, dart);
 
         s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
         expect(s1USBBalance).to.equal(dart);
@@ -174,6 +174,11 @@ describe('===INTERACTION===', function () {
     it('payback and withdraw', async function() {
         let dart = ether("60").toString();
 
+        // let vatState = await vat.connect(signer1).urns(collateral, signer1.address);
+        // console.log(vatState);
+
+        let s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
+        expect(s1Balance).to.equal(ether("4600").toString());
         let s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
         expect(s1USBBalance).to.equal(dart);
 
@@ -184,11 +189,25 @@ describe('===INTERACTION===', function () {
         expect(s1USBBalance).to.equal("0");
         // let ilk = await vat.connect(signer1).ilks(collateral);
         // console.log(ilk);
+
+        // vatState = await vat.connect(signer1).urns(collateral, signer1.address);
+        // console.log(vatState);
+
         let available = await interaction.connect(signer1).availableToBorrow(signer1.address);
         expect(available.toString()).to.equal(ether("640").toString());
 
         // USB are burned, now we have to withdraw collateral
         // We will always withdraw all available collateral
+        s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
+        expect(s1Balance).to.equal(ether("4600").toString());
+
+        let free = await interaction.connect(signer1).free(signer1.address);
+        expect(free.toString()).to.equal("0");
+
+        await interaction.connect(signer1).withdraw(ether("200").toString());
+
+        s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
+        expect(s1Balance).to.equal(ether("4800").toString());
 
     });
 });

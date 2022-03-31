@@ -21,7 +21,6 @@ async function main() {
         USB,
         aBNBcJoin,
         UsbJoin,
-        MANAGER
     );
     await interaction.deployed();
     console.log("interaction deployed to:", interaction.address);

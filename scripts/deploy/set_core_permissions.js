@@ -6,6 +6,7 @@ const { VAT,
     USB,
     UsbJoin,
     aBNBcJoin,
+    Oracle,
     MANAGER} = require('../../addresses.json');
 const {ethers} = require("hardhat");
 
@@ -23,10 +24,14 @@ async function main() {
     this.Usb = await hre.ethers.getContractFactory("Usb");
     this.GemJoin = await hre.ethers.getContractFactory("GemJoin");
     this.UsbJoin = await hre.ethers.getContractFactory("UsbJoin");
-    this.Manager = await hre.ethers.getContractFactory("DssCdpManager");
+    this.Oracle = await hre.ethers.getContractFactory("Oracle");
     this.Interaction = await hre.ethers.getContractFactory("DAOInteraction");
 
+
     console.log("Setting permissions");
+
+    let oracle = this.Oracle.attach(Oracle);
+    await oracle.setPrice("2" + wad); // 2$, mat = 80%, 2$ * 80% = 1.6$ With Safety Margin
 
     let vat = this.Vat.attach(VAT);
     await vat.init(collateral);
@@ -36,8 +41,12 @@ async function main() {
     await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("spot"), "500" + rad);
     await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "10" + rad);
 
+    await vat.rely(SPOT);
     let spot = this.Spot.attach(SPOT);
-    await spot["file(bytes32,uint256)"](ethers.utils.formatBytes32String("par"), "1" + ray);
+    await spot["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("pip"), oracle.address);
+    await spot["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("mat"), "1250000000000000000000000000"); // Liquidation Ratio
+    await spot["file(bytes32,uint256)"](ethers.utils.formatBytes32String("par"), "1" + ray); // It means pegged to 1$
+    await spot.poke(collateral);
 
     let usb = this.Usb.attach(USB);
     await usb.rely(UsbJoin);

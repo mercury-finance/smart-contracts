@@ -15,9 +15,10 @@ async function main() {
     this.Vat = await hre.ethers.getContractFactory("Vat");
     this.Spot = await hre.ethers.getContractFactory("Spotter");
     this.Usb = await hre.ethers.getContractFactory("Usb");
+    this.ABNBC = await hre.ethers.getContractFactory("aBNBc");
     this.GemJoin = await hre.ethers.getContractFactory("GemJoin");
     this.UsbJoin = await hre.ethers.getContractFactory("UsbJoin");
-    this.Manager = await hre.ethers.getContractFactory("DssCdpManager");
+    this.Oracle = await hre.ethers.getContractFactory("Oracle"); // Mock Oracle
 
     const vat = await this.Vat.deploy();
     await vat.deployed();
@@ -27,7 +28,7 @@ async function main() {
     await spot.deployed();
     console.log("Spot deployed to:", spot.address);
 
-    const abnbc = await this.Usb.deploy(97);
+    const abnbc = await this.ABNBC.deploy();
     await abnbc.deployed();
     console.log("aBNBc deployed to:", abnbc.address);
 
@@ -43,9 +44,9 @@ async function main() {
     await abnbcJoin.deployed();
     console.log("abnbcJoin deployed to:", abnbcJoin.address);
 
-    const manager = await this.Manager.deploy(vat.address);
-    await manager.deployed();
-    console.log("manager deployed to:", manager.address);
+    const oracle = await this.Oracle.deploy();
+    await oracle.deployed();
+    console.log("Oracle deployed to:", oracle.address);
 
     console.log('Validating code');
     await hre.run("verify:verify", {
@@ -61,8 +62,16 @@ async function main() {
 
     await hre.run("verify:verify", {
         address: abnbc.address,
+    });
+
+    await hre.run("verify:verify", {
+        address: oracle.address,
+    });
+
+    await hre.run("verify:verify", {
+        address: spot.address,
         constructorArguments: [
-            97
+            vat.address
         ],
     });
 
@@ -79,12 +88,6 @@ async function main() {
             vat.address,
             collateral,
             abnbc.address
-        ],
-    });
-    await hre.run("verify:verify", {
-        address: manager.address,
-        constructorArguments: [
-            vat.address
         ],
     });
     console.log('Finished');

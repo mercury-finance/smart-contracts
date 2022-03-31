@@ -37,3 +37,10 @@ Unlock and transfer funds to the user
 [VAT ABI](interfaces/VatHope.json)
 
 [IERC20 ABI](interfaces/IERC20.json)
+
+## Addresses
+
+* "VAT": "0x7FcCa90fC59a7102c726E52DB76BB308DAe48B0B", -- you can use this address instead of retrieving it from interaction
+* "INTERACTION": "0xa6814c94dA9c0D4C76B5c565bD31ca483eC350bd",
+* "aBNBc": "0x6E9F279cCEc00a245535EDa5775a9Af96c4BadCC",
+* "USB": "0x73256b30025de0d7CE2Ad814ec9E3A5719F371CA",

@@ -98,6 +98,7 @@ describe('===INTERACTION===', function () {
         await vat.connect(deployer).rely(abnbcJoin.address);
         await vat.connect(deployer).rely(usbJoin.address);
         await vat.connect(deployer).rely(spot.address);
+        await vat.connect(deployer).rely(interaction.address);
         // await vat.connect(deployer).rely(jug.address);
         await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "2000" + rad); // Normalized USB
         await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "1200" + rad);
@@ -144,16 +145,15 @@ describe('===INTERACTION===', function () {
         expect(s1USBBalance).to.equal("0");
 
         free = await interaction.connect(signer1).free(signer1.address);
-        expect(free.toString()).to.equal(ether("400").toString());
+        expect(free.toString()).to.equal("0");
         locked = await interaction.connect(signer1).locked(signer1.address);
-        expect(locked.toString()).to.equal("0");
+        expect(locked.toString()).to.equal(ether("400").toString());
 
         // Locking collateral and borrowing USB
         // We want to draw 60 USB == `dart`
-        await vat.connect(signer1).hope(interaction.address);
 
         let dart = ether("60").toString();
-        await interaction.connect(signer1).addCollateralAndBorrow(dink, dart);
+        await interaction.connect(signer1).borrow(dart);
 
         s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
         expect(s1USBBalance).to.equal(dart);

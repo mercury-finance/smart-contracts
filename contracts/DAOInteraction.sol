@@ -16,7 +16,7 @@ contract DAOInteraction {
     event Withdraw(address indexed user, uint256 amount);
 
     Vat public vat;
-    Spotter public spot;
+    Spotter public spotter;
     IERC20 public abnbc;
     Usb public usb;
     GemJoin public abnbcJoin;
@@ -33,7 +33,7 @@ contract DAOInteraction {
         address usbJoin_) {
 
         vat = Vat(vat_);
-        spot = Spotter(spot_);
+        spotter = Spotter(spot_);
         abnbc = IERC20(abnbc_);
         usb = Usb(usb_);
         abnbcJoin = GemJoin(abnbcJoin_);
@@ -77,7 +77,7 @@ contract DAOInteraction {
     // Rate for calculations is 1/<return value>
     // i.e. If mat == 125000..000 => rate = 1 / 1.25 = 0.8 = 80%.
     function collateralRate() public view returns (uint256){
-        (, uint256 mat) = spot.ilks(ilk);
+        (, uint256 mat) = spotter.ilks(ilk);
         return mat;
     }
 
@@ -92,38 +92,40 @@ contract DAOInteraction {
     function deposit(uint256 dink) external returns (uint256){
         abnbc.transferFrom(msg.sender, address(this), dink);
         abnbcJoin.join(msg.sender, dink);
+        vat.behalf(msg.sender, address(this));
+        vat.frob(ilk, msg.sender, msg.sender, msg.sender, int256(dink), 0);
 
         emit Deposit(msg.sender, dink);
         return dink;
     }
 
-    function addCollateralAndBorrow(uint256 dink, uint256 dart) external returns(uint256) {
-        vat.frob(ilk, msg.sender, msg.sender, msg.sender, int256(dink), int256(dart));
-        vat.move(msg.sender, address(this), dart * 10**27);
-        usbJoin.exit(msg.sender, dart);
-
-        emit Borrow(msg.sender, dart);
-        return dart;
-    }
-
-    // Collaterize only needed amount of aBNBc
-    // TODO: Need to implement some safe margin to avoid fast liquidation
     function borrow(uint256 dart) external returns(uint256) {
-        // User can borrow this amount of `dart`
-        int256 collateral = availableToBorrow(msg.sender);
-        int256 sDart = int256(dart);
-        if (collateral < sDart) {
-            require(int256(vat.gem(ilk, msg.sender)) >= collateral - sDart, "Interaction/not-enough-collateral");
-            vat.frob(ilk, msg.sender, msg.sender, msg.sender, collateral - sDart, sDart);
-        } else {
-            vat.frob(ilk, msg.sender, msg.sender, msg.sender, 0, sDart);
-        }
+        vat.frob(ilk, msg.sender, msg.sender, msg.sender, 0, int256(dart));
         vat.move(msg.sender, address(this), dart * 10**27);
         usbJoin.exit(msg.sender, dart);
 
         emit Borrow(msg.sender, dart);
         return dart;
     }
+
+//    // Collaterize only needed amount of aBNBc
+//    // TODO: Need to implement some safe margin to avoid fast liquidation
+//    function borrow(uint256 dart) external returns(uint256) {
+//        // User can borrow this amount of `dart`
+//        int256 collateral = availableToBorrow(msg.sender);
+//        int256 sDart = int256(dart);
+//        if (collateral < sDart) {
+//            require(int256(vat.gem(ilk, msg.sender)) >= collateral - sDart, "Interaction/not-enough-collateral");
+//            vat.frob(ilk, msg.sender, msg.sender, msg.sender, collateral - sDart, sDart);
+//        } else {
+//            vat.frob(ilk, msg.sender, msg.sender, msg.sender, 0, sDart);
+//        }
+//        vat.move(msg.sender, address(this), dart * 10**27);
+//        usbJoin.exit(msg.sender, dart);
+//
+//        emit Borrow(msg.sender, dart);
+//        return dart;
+//    }
 
     // Burn user's USB.
     // N.B. User collateral stays the same.

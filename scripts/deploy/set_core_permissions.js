@@ -7,7 +7,8 @@ const { VAT,
     UsbJoin,
     aBNBcJoin,
     Oracle,
-    MANAGER} = require('../../addresses.json');
+    MANAGER,
+    INTERACTION} = require('../../addresses.json');
 const {ethers} = require("hardhat");
 
 async function main() {
@@ -33,21 +34,26 @@ async function main() {
     let oracle = this.Oracle.attach(Oracle);
     await oracle.setPrice("2" + wad); // 2$, mat = 80%, 2$ * 80% = 1.6$ With Safety Margin
 
+    console.log("Vat...");
+
     let vat = this.Vat.attach(VAT);
     await vat.init(collateral);
     await vat.rely(aBNBcJoin);
+    await vat.rely(INTERACTION);
+    await vat.rely(SPOT);
     await vat["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "5000" + rad);
     await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "2000" + rad);
     await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("spot"), "500" + rad);
     await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "10" + rad);
 
-    await vat.rely(SPOT);
+    console.log("Spot...");
     let spot = this.Spot.attach(SPOT);
     await spot["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("pip"), oracle.address);
     await spot["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("mat"), "1250000000000000000000000000"); // Liquidation Ratio
     await spot["file(bytes32,uint256)"](ethers.utils.formatBytes32String("par"), "1" + ray); // It means pegged to 1$
     await spot.poke(collateral);
 
+    console.log("Usb...");
     let usb = this.Usb.attach(USB);
     await usb.rely(UsbJoin);
 

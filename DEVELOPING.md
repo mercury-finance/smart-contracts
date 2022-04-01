@@ -11,9 +11,11 @@ aBNBc is ERC20 complaint contract.
 
 ### Borrow
 
-1. Get `vat` contract address from interaction.
-2. Call `vat.hope(<interaction_address>)`
-3. Call `interaction.addCollateralAndBorrow(<amount_to_collaterize>, <amount_to_borrow>)`
+~~1. Get `vat` contract address from interaction.~~ No more needed
+
+~~2. Call vat.hope(<interaction_address>)~~
+
+1. Call `interaction.borrow(<amount_to_borrow>)`
 
 Check that you have USB present in the wallet
 
@@ -30,17 +32,19 @@ Unlock and transfer funds to the user
 
 1. Call `interaction.withdraw(<abnbc_amount_to_withdraw>)`
 
+### View functions
+
+* `interaction.locked(<user_address>)` - Amount of aBNBc in collateral for a user
+* `interaction.borrowed(<user_address>)` - Amount of USB borrowed by user
 
 ## ABIs
 [INTERACTION ABI](interfaces/DAOInteraction.json)
-
-[VAT ABI](interfaces/VatHope.json)
 
 [IERC20 ABI](interfaces/IERC20.json)
 
 ## Addresses
 
-* "VAT": "0x7FcCa90fC59a7102c726E52DB76BB308DAe48B0B", -- you can use this address instead of retrieving it from interaction
-* "INTERACTION": "0xbB8115E03653080C24cc74e95B2Bc7C29b68A334",
-* "aBNBc": "0x6E9F279cCEc00a245535EDa5775a9Af96c4BadCC",
-* "USB": "0x73256b30025de0d7CE2Ad814ec9E3A5719F371CA",
+* "VAT": "0xf31dbdB4F009a0c064820d1310B3748377E94405", -- you can use this address instead of retrieving it from interaction
+* "INTERACTION": "0x7DCc00D49aE0f908d80b8894aD4A19105e1f6483",
+* "aBNBc": "0x43529c21Cd98870B5693b9081391D938EE54E240",
+* "USB": "0x2C9120b9Fc23e93Eb3ff887FC4CDc3AFB3869F09",

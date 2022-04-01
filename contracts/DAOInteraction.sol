@@ -8,8 +8,6 @@ import {GemJoin, UsbJoin} from "./join.sol";
 import {Usb} from "./usb.sol";
 import {Spotter} from "./spot.sol";
 
-import "hardhat/console.sol";
-
 contract DAOInteraction {
 
     event Deposit(address indexed user, uint256 amount);

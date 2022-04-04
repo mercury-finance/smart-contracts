@@ -6,7 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vat} from "./vat.sol";
 import {GemJoin, UsbJoin} from "./join.sol";
 import {Usb} from "./usb.sol";
-import {Spotter} from "./spot.sol";
+import {Spotter, PipLike} from "./spot.sol";
+
+import "hardhat/console.sol";
 
 contract DAOInteraction {
 
@@ -23,6 +25,8 @@ contract DAOInteraction {
     UsbJoin public usbJoin;
 
     bytes32 ilk;
+
+    uint256 private deposits;
 
     constructor(
         address vat_,
@@ -60,41 +64,13 @@ contract DAOInteraction {
         }
     }
 
-    function free(address usr) public view returns (uint256) {
-        return vat.gem(ilk, usr);
-    }
-
-    function locked(address usr) public view returns (uint256) {
-        (uint256 ink,) = vat.urns(ilk, usr);
-        return ink;
-    }
-
-    function borrowed(address usr) public view returns (uint256) {
-        (, uint256 art) = vat.urns(ilk, usr);
-        return art;
-    }
-
-    // Rate for calculations is 1/<return value>
-    // i.e. If mat == 125000..000 => rate = 1 / 1.25 = 0.8 = 80%.
-    function collateralRate() public view returns (uint256){
-        (, uint256 mat) = spotter.ilks(ilk);
-        return mat;
-    }
-
-    function availableToBorrow(address usr) public view returns(int256){
-        (uint256 ink, uint256 art) = vat.urns(ilk, usr);
-        (, uint256 rate, uint256 spot,,) = vat.ilks(ilk);
-        uint256 collateral = ink * spot;
-        uint256 debt = rate * art;
-        return (int256(collateral) - int256(debt)) / 1e27;
-    }
-
     function deposit(uint256 dink) external returns (uint256){
         abnbc.transferFrom(msg.sender, address(this), dink);
         abnbcJoin.join(msg.sender, dink);
         vat.behalf(msg.sender, address(this));
         vat.frob(ilk, msg.sender, msg.sender, msg.sender, int256(dink), 0);
 
+        deposits += dink;
         emit Deposit(msg.sender, dink);
         return dink;
     }
@@ -107,25 +83,6 @@ contract DAOInteraction {
         emit Borrow(msg.sender, dart);
         return dart;
     }
-
-//    // Collaterize only needed amount of aBNBc
-//    // TODO: Need to implement some safe margin to avoid fast liquidation
-//    function borrow(uint256 dart) external returns(uint256) {
-//        // User can borrow this amount of `dart`
-//        int256 collateral = availableToBorrow(msg.sender);
-//        int256 sDart = int256(dart);
-//        if (collateral < sDart) {
-//            require(int256(vat.gem(ilk, msg.sender)) >= collateral - sDart, "Interaction/not-enough-collateral");
-//            vat.frob(ilk, msg.sender, msg.sender, msg.sender, collateral - sDart, sDart);
-//        } else {
-//            vat.frob(ilk, msg.sender, msg.sender, msg.sender, 0, sDart);
-//        }
-//        vat.move(msg.sender, address(this), dart * 10**27);
-//        usbJoin.exit(msg.sender, dart);
-//
-//        emit Borrow(msg.sender, dart);
-//        return dart;
-//    }
 
     // Burn user's USB.
     // N.B. User collateral stays the same.
@@ -156,9 +113,114 @@ contract DAOInteraction {
             vat.flux(ilk, msg.sender, address(this), uint256(diff));
         }
         abnbcJoin.exit(msg.sender, dink);
+        deposits -= dink;
 
         emit Withdraw(msg.sender, dink);
         return dink;
     }
 
+
+    /////////////////////////////////
+    //// VIEW                    ////
+    /////////////////////////////////
+
+    // Price of the collateral asset(aBNBc) from Oracle
+    function collateralPrice() public view returns (uint256) {
+        (PipLike pip,) = spotter.ilks(ilk);
+        (bytes32 price, bool has) = pip.peek();
+        if (has) {
+            return uint256(price);
+        } else {
+            return 0;
+        }
+    }
+
+    // Returns the USB price in $
+    function usbPrice() external view returns (uint256) {
+        (, uint256 rate,,,) = vat.ilks(ilk);
+        return rate / 10**9;
+    }
+
+    // Returns how much USB user can borrow for one token of collateral
+    // i.e. 1 aBNBc worth `collateralRate` USB
+    function collateralRate() external view returns (uint256) {
+        (,,uint256 spot,,) = vat.ilks(ilk);
+        return spot / 10**9;
+    }
+
+    // Total aBNBc deposited nominated in $
+    function depositTVL() external view returns (uint256) {
+        return deposits * collateralPrice();
+    }
+
+    // Total USB borrowed by all users
+    function collateralTVL() external view returns (uint256) {
+        (uint256 Art,,,,) = vat.ilks(ilk);
+        return Art;
+    }
+
+    // Not locked user balance in aBNBc
+    function free(address usr) public view returns (uint256) {
+        return vat.gem(ilk, usr);
+    }
+
+    // User collateral in aBNBc
+    function locked(address usr) external view returns (uint256) {
+        (uint256 ink,) = vat.urns(ilk, usr);
+        return ink;
+    }
+
+    // Total borrowed USB
+    function borrowed(address usr) external view returns (uint256) {
+        (, uint256 art) = vat.urns(ilk, usr);
+        return art;
+    }
+
+    // Collateral - borrowed. Basically free collateral (nominated in USB)
+    function availableToBorrow(address usr) external view returns(int256) {
+        (uint256 ink, uint256 art) = vat.urns(ilk, usr);
+        (, uint256 rate, uint256 spot,,) = vat.ilks(ilk);
+        uint256 collateral = ink * spot;
+        uint256 debt = rate * art;
+        return (int256(collateral) - int256(debt)) / 1e27;
+    }
+
+    // Collateral - borrowed. Basically free collateral (nominated in USB)
+    function willBorrow(address usr, int256 amount) external view returns(int256) {
+        (uint256 ink, uint256 art) = vat.urns(ilk, usr);
+        (, uint256 rate, uint256 spot,,) = vat.ilks(ilk);
+        require(amount >= -(int256(ink)), "Cannot withdraw more than current amount");
+        if (amount < 0) {
+            ink = uint256(int256(ink) + amount);
+        } else {
+            ink += uint256(amount);
+        }
+        uint256 collateral = ink * spot;
+        uint256 debt = rate * art;
+        return (int256(collateral) - int256(debt)) / 1e27;
+    }
+
+    // Price of aBNBc when user will be liquidated
+    function currentLiquidationPrice(address usr) external view returns (uint256) {
+        (uint256 ink, uint256 art) = vat.urns(ilk, usr);
+        (, uint256 rate, uint256 spot,,) = vat.ilks(ilk);
+        (,uint256 mat) = spotter.ilks(ilk);
+        uint256 backedDebt = (art * rate / 10**36) * mat;
+        return backedDebt / ink;
+    }
+
+    // Price of aBNBc when user will be liquidated with additional amount of aBNBc deposited/withdraw
+    function estimatedLiquidationPrice(address usr, int256 amount) external view returns (uint256) {
+        (uint256 ink, uint256 art) = vat.urns(ilk, usr);
+        require(amount >= -(int256(ink)), "Cannot withdraw more than current amount");
+        if (amount < 0) {
+            ink = uint256(int256(ink) + amount);
+        } else {
+            ink += uint256(amount);
+        }
+        (, uint256 rate, uint256 spot,,) = vat.ilks(ilk);
+        (,uint256 mat) = spotter.ilks(ilk);
+        uint256 backedDebt = (art * rate / 10**36) * mat;
+        return backedDebt / ink;
+    }
 }

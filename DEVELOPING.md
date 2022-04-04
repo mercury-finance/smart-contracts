@@ -34,8 +34,18 @@ Unlock and transfer funds to the user
 
 ## View functions
 
-* `interaction.locked(<user_address>)` - Amount of aBNBc in collateral for a user
-* `interaction.borrowed(<user_address>)` - Amount of USB borrowed by user
+* `locked(<user_address>)` - Amount of aBNBc in collateral for a user
+* `borrowed(<user_address>)` - Amount of USB borrowed by user
+* `collateralPrice()` - price of the collateral asset(aBNBc) from Oracle
+* `usbPrice()` - USB price
+* `collateralRate` - how much USB user can borrow for one token of collateral<br> 
+                     i.e. 1 aBNBc worth `collateralRate` USB
+* `depositTVL()` - Total aBNBc deposited nominated in $
+* `collateralTVL()` - Total USB borrowed by all users
+* `availableToBorrow(<user_address>)` - Collateral minus borrowed. In other words: free collateral (nominated in USB)
+* `willBorrow(<user_address>, <amount>)` - Collateral minus borrowed with additional amount of aBNBc (`amount` can be negative).
+* `currentLiquidationPrice(<user_address>)` - Price of aBNBc when user will be liquidated
+* `estimatedLiquidationPrice(<user_address>, <amount>)` - Price of aBNBc when user will be liquidated with additional amount of aBNBc deposited/withdraw
 
 ## ABIs
 [INTERACTION ABI](interfaces/DAOInteraction.json)
@@ -44,6 +54,6 @@ Unlock and transfer funds to the user
 
 ## Addresses
 
-* "INTERACTION": "0x7DCc00D49aE0f908d80b8894aD4A19105e1f6483",
-* "aBNBc": "0x43529c21Cd98870B5693b9081391D938EE54E240",
-* "USB": "0x2C9120b9Fc23e93Eb3ff887FC4CDc3AFB3869F09",
+* "INTERACTION": [0x7DCc00D49aE0f908d80b8894aD4A19105e1f6483](https://testnet.bscscan.com/address/0x7DCc00D49aE0f908d80b8894aD4A19105e1f6483),
+* "aBNBc": [0x43529c21Cd98870B5693b9081391D938EE54E240](https://testnet.bscscan.com/address/0x43529c21Cd98870B5693b9081391D938EE54E240),
+* "USB": [0x2C9120b9Fc23e93Eb3ff887FC4CDc3AFB3869F09](https://testnet.bscscan.com/address/0x2C9120b9Fc23e93Eb3ff887FC4CDc3AFB3869F09),

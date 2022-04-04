@@ -91,7 +91,7 @@ describe('===INTERACTION===', function () {
         // Initialize External
         // 2.000000000000000000000000000 ($) * 0.8 (80%) = 1.600000000000000000000000000,
         // 2.000000000000000000000000000 / 1.600000000000000000000000000 = 1.250000000000000000000000000 = mat
-        await oracle.connect(deployer).setPrice("2" + wad); // 2$, mat = 80%, 2$ * 80% = 1.6$ With Safety Margin
+        await oracle.connect(deployer).setPrice("400" + wad); // 400$, mat = 80%, 400$ * 80% = 320$ With Safety Margin
 
         // Initialize Core Module
         await vat.connect(deployer).init(collateral);
@@ -100,10 +100,10 @@ describe('===INTERACTION===', function () {
         await vat.connect(deployer).rely(spot.address);
         await vat.connect(deployer).rely(interaction.address);
         // await vat.connect(deployer).rely(jug.address);
-        await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "2000" + rad); // Normalized USB
-        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "1200" + rad);
-        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("spot"), "500" + rad);
-        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "10" + rad);
+        await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "20000" + rad); // Normalized USB
+        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "2000" + rad);
+        // await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("spot"), "500" + rad);
+        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "1" + rad);
 
         await spot.connect(deployer)["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("pip"), oracle.address);
         await spot.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("mat"), "1250000000000000000000000000"); // Liquidation Ratio
@@ -115,6 +115,11 @@ describe('===INTERACTION===', function () {
     });
 
     it('put collaterall and borrow', async function () {
+        let abnbcPrice = await interaction.connect(signer1).collateralPrice();
+        expect(abnbcPrice.toString()).to.equal(ether("400").toString());
+
+        let rate = await interaction.connect(signer1).collateralRate();
+        expect(rate.toString()).to.equal(ether("320").toString());
 
         let s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
         expect(s1Balance).to.equal("0");
@@ -133,13 +138,13 @@ describe('===INTERACTION===', function () {
         expect(locked.toString()).to.equal("0");
 
         // Approve and send some collateral inside. collateral value == 400 == `dink`
-        let dink = ether("400").toString();
+        let dink = ether("2").toString();
 
         await abnbc.connect(signer1).approve(interaction.address, dink);
         await interaction.connect(signer1).deposit(dink);
 
         s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
-        expect(s1Balance).to.equal(ether("4600").toString());
+        expect(s1Balance).to.equal(ether("4998").toString());
 
         let s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
         expect(s1USBBalance).to.equal("0");
@@ -147,7 +152,7 @@ describe('===INTERACTION===', function () {
         free = await interaction.connect(signer1).free(signer1.address);
         expect(free.toString()).to.equal("0");
         locked = await interaction.connect(signer1).locked(signer1.address);
-        expect(locked.toString()).to.equal(ether("400").toString());
+        expect(locked.toString()).to.equal(ether("2").toString());
 
         // Locking collateral and borrowing USB
         // We want to draw 60 USB == `dart`
@@ -165,10 +170,18 @@ describe('===INTERACTION===', function () {
         s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
         expect(s1USBBalance).to.equal(dart);
 
-        // User locked 400 aBNBc with price 2 and rate 0.8 == 640$ collateral worth
+        // User locked 2 aBNBc with price 400 and rate 0.8 == 640$ collateral worth
         // Borrowed 60$ => available should equal to 640 - 60 = 580.
         let available = await interaction.connect(signer1).availableToBorrow(signer1.address);
         expect(available.toString()).to.equal(ether("580").toString());
+
+        let liquidationPrice = await interaction.connect(signer1).currentLiquidationPrice(signer1.address);
+        expect(liquidationPrice.toString()).to.equal(ether("37.5").toString());
+        // console.log("Liq.price is: " + liquidationPrice.toString());
+
+        let estLiquidationPrice = await interaction.connect(signer1).estimatedLiquidationPrice(signer1.address, ether("1").toString());
+        expect(estLiquidationPrice.toString()).to.equal(ether("25").toString());
+        // console.log("Est.Liq.price is: " + estLiquidationPrice.toString());
     });
 
     it('payback and withdraw', async function() {
@@ -178,7 +191,7 @@ describe('===INTERACTION===', function () {
         // console.log(vatState);
 
         let s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
-        expect(s1Balance).to.equal(ether("4600").toString());
+        expect(s1Balance).to.equal(ether("4998").toString());
         let s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
         expect(s1USBBalance).to.equal(dart);
 
@@ -196,18 +209,20 @@ describe('===INTERACTION===', function () {
         let available = await interaction.connect(signer1).availableToBorrow(signer1.address);
         expect(available.toString()).to.equal(ether("640").toString());
 
+        let willBeAvailable = await interaction.connect(signer1).willBorrow(signer1.address, ether("1").toString());
+        expect(willBeAvailable.toString()).to.equal(ether("960").toString());
+
         // USB are burned, now we have to withdraw collateral
         // We will always withdraw all available collateral
         s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
-        expect(s1Balance).to.equal(ether("4600").toString());
+        expect(s1Balance).to.equal(ether("4998").toString());
 
         let free = await interaction.connect(signer1).free(signer1.address);
         expect(free.toString()).to.equal("0");
 
-        await interaction.connect(signer1).withdraw(ether("200").toString());
+        await interaction.connect(signer1).withdraw(ether("1").toString());
 
         s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
-        expect(s1Balance).to.equal(ether("4800").toString());
-
+        expect(s1Balance).to.equal(ether("4999").toString());
     });
 });

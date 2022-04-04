@@ -22,7 +22,7 @@ interface VatLike {
 }
 
 interface PipLike {
-    function peek() external returns (bytes32, bool);
+    function peek() external view returns (bytes32, bool);
 }
 
 contract Spotter {

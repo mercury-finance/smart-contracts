@@ -176,7 +176,7 @@ contract DAOInteraction {
         return art;
     }
 
-    // Collateral - borrowed. Basically free collateral (nominated in USB)
+    // Collateral minus borrowed. Basically free collateral (nominated in USB)
     function availableToBorrow(address usr) external view returns(int256) {
         (uint256 ink, uint256 art) = vat.urns(ilk, usr);
         (, uint256 rate, uint256 spot,,) = vat.ilks(ilk);
@@ -185,7 +185,8 @@ contract DAOInteraction {
         return (int256(collateral) - int256(debt)) / 1e27;
     }
 
-    // Collateral - borrowed. Basically free collateral (nominated in USB)
+    // Collateral + `amount` minus borrowed. Basically free collateral (nominated in USB)
+    // Returns how much usb you can borrow if provide additional `amount` of collateral
     function willBorrow(address usr, int256 amount) external view returns(int256) {
         (uint256 ink, uint256 art) = vat.urns(ilk, usr);
         (, uint256 rate, uint256 spot,,) = vat.ilks(ilk);

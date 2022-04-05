@@ -19,8 +19,6 @@
 
 pragma solidity ^0.8.10;
 
-import "hardhat/console.sol";
-
 // FIXME: This contract was altered compared to the production version.
 // It doesn't use LibNote anymore.
 // New deployments of this contract will need to include custom events (TO DO).
@@ -170,7 +168,6 @@ contract Vat {
         int dtab = mul(ilk.rate, dart);
         uint tab = mul(ilk.rate, urn.art);
         debt     = add(debt, dtab);
-        console.logInt(dtab);
 
         // either debt has decreased, or debt ceilings are not exceeded
         require(either(dart <= 0, both(mul(ilk.Art, ilk.rate) <= ilk.line, debt <= Line)), "Vat/ceiling-exceeded");

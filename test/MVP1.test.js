@@ -174,7 +174,7 @@ describe('===MVP1===', function () {
         expect((await (await vat.connect(signer1).urns(collateral, signer1.address)).art).toString()).to.be.equal("0");
         expect((await (await vat.connect(signer1).ilks(collateral)).Art).toString()).to.be.equal("0");
                 
-        // Normalized dart [wad] = amount to borrow / ilk.rate
+        // Normalized dart [wad] = amount in USB / ilk.rate
         let debt_rate = await (await vat.ilks(collateral)).rate;
         let usb_amount1 = (550000000000000000000 / debt_rate) * ONE;
         let usb_amount2 = (600000000000000000000 / debt_rate) * ONE;

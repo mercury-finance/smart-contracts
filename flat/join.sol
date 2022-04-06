@@ -1,4 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MIXED
+
+// File contracts/join.sol
+// License-Identifier: AGPL-3.0-or-later
 
 /// join.sol -- Basic token adapters
 
@@ -49,7 +52,7 @@ interface VatLike {
 
       - `ETHJoin`: For native Ether.
 
-      - `UsbJoin`: For connecting internal Usb balances to an external
+      - `DaiJoin`: For connecting internal Dai balances to an external
                    `DSToken` implementation.
 
     In practice, adapter implementations will be varied and specific to
@@ -132,12 +135,12 @@ contract UsbJoin {
         emit Deny(usr);
     }
     modifier auth {
-        require(wards[msg.sender] == 1, "UsbJoin/not-authorized");
+        require(wards[msg.sender] == 1, "DaiJoin/not-authorized");
         _;
     }
 
     VatLike public vat;      // CDP Engine
-    DSTokenLike public usb;  // Stablecoin Token
+    DSTokenLike public dai;  // Stablecoin Token
     uint    public live;     // Active Flag
 
     // Events
@@ -147,11 +150,11 @@ contract UsbJoin {
     event Exit(address indexed usr, uint256 wad);
     event Cage();
 
-    constructor(address vat_, address usb_) {
+    constructor(address vat_, address dai_) {
         wards[msg.sender] = 1;
         live = 1;
         vat = VatLike(vat_);
-        usb = DSTokenLike(usb_);
+        dai = DSTokenLike(dai_);
     }
     function cage() external auth {
         live = 0;
@@ -159,19 +162,17 @@ contract UsbJoin {
     }
     uint constant ONE = 10 ** 27;
     function mul(uint x, uint y) internal pure returns (uint z) {
-        unchecked {
-            require(y == 0 || (z = x * y) / y == x);
-        }
+        require(y == 0 || (z = x * y) / y == x);
     }
     function join(address usr, uint wad) external {
         vat.move(address(this), usr, mul(ONE, wad));
-        usb.burn(msg.sender, wad);
+        dai.burn(msg.sender, wad);
         emit Join(usr, wad);
     }
     function exit(address usr, uint wad) external {
-        require(live == 1, "UsbJoin/not-live");
+        require(live == 1, "DaiJoin/not-live");
         vat.move(msg.sender, address(this), mul(ONE, wad));
-        usb.mint(usr, wad);
+        dai.mint(usr, wad);
         emit Exit(usr, wad);
     }
 }

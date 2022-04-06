@@ -13,7 +13,7 @@ const DATA = "0x02";
 ///////////////////////////////////////////
 
 describe('===MVP1===', function () {
-    let deployer, signer1, signer2, mockVow;
+    let deployer, signer1, signer2, signer3;
 
     let vat, 
         spot, 
@@ -21,7 +21,11 @@ describe('===MVP1===', function () {
         abnbc, 
         gemJoin, 
         usbJoin,
-        jug;
+        jug,
+        dog,
+        clipABNBC,
+        abaci,
+        vow;
 
     let oracle;
 
@@ -39,7 +43,7 @@ describe('===MVP1===', function () {
         /** Deployments ------------ **/
         ////////////////////////////////
 
-        [deployer, signer1, signer2, mockVow] = await ethers.getSigners();
+        [deployer, signer1, signer2, signer3] = await ethers.getSigners();
 
         this.Vat = await ethers.getContractFactory("Vat");
         this.Spot = await ethers.getContractFactory("Spotter");
@@ -47,6 +51,10 @@ describe('===MVP1===', function () {
         this.GemJoin = await ethers.getContractFactory("GemJoin");
         this.UsbJoin = await ethers.getContractFactory("UsbJoin");
         this.Jug = await ethers.getContractFactory("Jug");
+        this.Dog = await ethers.getContractFactory("Dog");
+        this.ClipABNBC = await ethers.getContractFactory("Clipper");
+        this.Abaci = await ethers.getContractFactory("LinearDecrease");
+        this.Vow = await ethers.getContractFactory("Vow");
         this.Oracle = await ethers.getContractFactory("Oracle"); // Mock Oracle
 
         // Core module
@@ -71,7 +79,19 @@ describe('===MVP1===', function () {
         jug = await this.Jug.connect(deployer).deploy(vat.address);
         await jug.deployed();
 
-        // External
+        // Liquidation module
+        dog = await this.Dog.connect(deployer).deploy(vat.address);
+        await dog.deployed();
+        clipABNBC = await this.ClipABNBC.connect(deployer).deploy(vat.address, spot.address, dog.address, collateral);
+        await clipABNBC.deployed();
+        abaci = await this.Abaci.connect(deployer).deploy();
+        await abaci.deployed();
+
+        // System Stabilizer module (balance sheet)
+        vow = await this.Vow.connect(deployer).deploy(vat.address, NULL_ADDRESS, NULL_ADDRESS);
+        await vow.deployed();
+
+        // Oracle module
         oracle = await this.Oracle.connect(deployer).deploy();
         await oracle.deployed();
 
@@ -79,7 +99,7 @@ describe('===MVP1===', function () {
         /** Initial Setup -------- **/
         //////////////////////////////
 
-        // Initialize External
+        // Initialize Oracle Module
         // 2.000000000000000000000000000 ($) * 0.8 (80%) = 1.600000000000000000000000000, 
         // 2.000000000000000000000000000 / 1.600000000000000000000000000 = 1.250000000000000000000000000 = mat
         await oracle.connect(deployer).setPrice("2" + wad); // 2$, mat = 80%, 2$ * 80% = 1.6$ With Safety Margin
@@ -90,6 +110,8 @@ describe('===MVP1===', function () {
         await vat.connect(deployer).rely(usbJoin.address);
         await vat.connect(deployer).rely(spot.address);
         await vat.connect(deployer).rely(jug.address);
+        await vat.connect(deployer).rely(dog.address);
+        await vat.connect(deployer).rely(clipABNBC.address);
         await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "2000" + rad); // Normalized USB
         await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "1200" + rad); // Normalized USB
         await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "500" + rad); // Normalized USB
@@ -135,7 +157,32 @@ describe('===MVP1===', function () {
         expect(await(await jug.base()).toString()).to.be.equal("1000000000315529215730000000")
         expect(await(await(await jug.ilks(collateral)).duty).toString()).to.be.equal("312410000000000000");
 
-        await jug.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), mockVow.address);
+        await jug.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), vow.address);
+
+        // Initialize Liquidation Module
+        await dog.connect(deployer).rely(clipABNBC.address);
+        await dog.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), vow.address);
+        await dog.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Hole"), "500" + rad);
+        await dog.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("hole"), "250" + rad);
+        await dog.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("chop"), "1100000000000000000"); // 10%
+        await dog.connect(deployer)["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("clip"), clipABNBC.address);
+
+        await clipABNBC.connect(deployer).rely(dog.address);
+        await clipABNBC.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("buf"), "1100000000000000000000000000"); // 10%
+        await clipABNBC.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("tail"), "1800"); // 30mins reset time
+        await clipABNBC.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("cusp"), "600000000000000000000000000"); // 60% reset ratio
+        await clipABNBC.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("chip"), "10000000000000000"); // 1% from vow incentive
+        await clipABNBC.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("tip"), "10" + rad); // 10$ flat fee incentive
+        await clipABNBC.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("stopped"), "0");
+        await clipABNBC.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("spotter"), spot.address);
+        await clipABNBC.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("dog"), dog.address);
+        await clipABNBC.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), vow.address);
+        await clipABNBC.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("calc"), abaci.address);
+
+        await abaci.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("tau"), "3600"); // Price will reach 0 after this time
+
+        // Initialize Stabilizer Module
+        await vow.connect(deployer).rely(dog.address);
     });
 
     it('should check collateralization and borrowing Usb', async function () {
@@ -221,7 +268,6 @@ describe('===MVP1===', function () {
 
         // Repaying all USB amount and closing the vault
         // Borrow the extra USB fee from market or Transfer from another vault
-        console.log(await vat.usb(signer2.address));
         await vat.connect(signer2).hope(usbJoin.address);
         await usbJoin.connect(signer2).exit(signer1.address, ethers.utils.parseEther("20"));
         await usb.connect(signer1).approve(usbJoin.address, ethers.utils.parseEther("20"))
@@ -238,5 +284,40 @@ describe('===MVP1===', function () {
         console.log("Usb(signer1)  : " + await (await vat.connect(signer1).usb(signer1.address)).toString());
         console.log("Debt          : " + await (await vat.connect(signer1).debt()).toString());
         await network.provider.send("evm_mine");
+        
+
+        // Trying to liquidate Signer2 in an not-unsafe state
+        await expect(dog.connect(deployer).bark(collateral, signer2.address, signer3.address)).to.be.revertedWith("Dog/not-unsafe");
+
+        // Signer2 uncollaterlizes 517 abnbc
+        await vat.connect(signer2).frob(collateral, signer2.address, signer2.address, signer2.address, "-517000000000000000000", 0);
+
+        // After 1 year, Signer2's vault is unsafe
+        // Update Stability Fees
+        await network.provider.send("evm_increaseTime", [31536000]); // Jump 1 Year
+        await jug.connect(deployer).drip(collateral);
+        await network.provider.send("evm_mine");
+
+        // Liquidator liquidates signer2
+        await dog.connect(deployer).bark(collateral, signer2.address, signer3.address);
+
+        // Signer2 Debt and Collateral after liquidation grab should be 0
+        expect(await (await vat.urns(collateral, signer2.address)).ink).to.equal("0");
+        expect(await (await (await vat.connect(signer2).urns(collateral, signer2.address)).art).toString()).to.equal("0");
+
+        let sale = await clipABNBC.getStatus(1);
+        console.log("---Before Auction Purchase")
+        console.log(sale.lot);
+        console.log(sale.tab);
+
+        // Signer1 Buys 8 USB worth of Collateral
+        await vat.connect(signer1).hope(clipABNBC.address);
+        await clipABNBC.connect(signer1).take("1", "3" + wad, "2200000000000000000000000000", signer1.address, "0x");
+        
+        sale = await clipABNBC.getStatus(1);
+        console.log("---After Auction Purchase")
+        console.log(sale.lot);
+        console.log(sale.tab);
+
     });
 });

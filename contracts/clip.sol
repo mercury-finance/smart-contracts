@@ -18,6 +18,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pragma solidity ^0.8.10;
+import "hardhat/console.sol";
 
 interface VatLike {
     function move(address,address,uint256) external;
@@ -346,7 +347,6 @@ contract Clipper {
 
         address usr = sales[id].usr;
         uint96  tic = sales[id].tic;
-
         require(usr != address(0), "Clipper/not-running-auction");
 
         uint256 price;

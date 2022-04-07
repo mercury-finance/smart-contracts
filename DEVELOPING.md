@@ -11,10 +11,6 @@ aBNBc is ERC20 complaint contract.
 
 ### Borrow
 
-~~1. Get `vat` contract address from interaction.~~ No more needed
-
-~~2. Call vat.hope(<interaction_address>)~~
-
 1. Call `interaction.borrow(<amount_to_borrow>)`
 
 Check that you have USB present in the wallet
@@ -54,6 +50,13 @@ Unlock and transfer funds to the user
 
 ## Addresses
 
-* "INTERACTION": [0xcB5E47a564C5f88a6652D095A3D5b010D03940aB](https://testnet.bscscan.com/address/0xcB5E47a564C5f88a6652D095A3D5b010D03940aB),
-* "aBNBc": [0x43529c21Cd98870B5693b9081391D938EE54E240](https://testnet.bscscan.com/address/0x43529c21Cd98870B5693b9081391D938EE54E240),
-* "USB": [0x2C9120b9Fc23e93Eb3ff887FC4CDc3AFB3869F09](https://testnet.bscscan.com/address/0x2C9120b9Fc23e93Eb3ff887FC4CDc3AFB3869F09),
+* "INTERACTION": [0x96cDdE62c8BA5D21572D715DA03f5330e6C77dC8](https://testnet.bscscan.com/address/0x96cDdE62c8BA5D21572D715DA03f5330e6C77dC8),
+* "mock aBNBc": [0x34e31dBCDd0866B90C4d2F3a3572C7Ce7918088f](https://testnet.bscscan.com/address/0x34e31dBCDd0866B90C4d2F3a3572C7Ce7918088f),
+* "REAL aBNBc": [0x46dE2FBAf41499f298457cD2d9288df4Eb1452Ab](https://testnet.bscscan.com/address/0x46dE2FBAf41499f298457cD2d9288df4Eb1452Ab),
+* "USB": [0x2b897B577d5277C056d763B58b93F718e2A9d7d6](https://testnet.bscscan.com/address/0x2b897B577d5277C056d763B58b93F718e2A9d7d6),
+
+## String to bytes32
+
+https://ethereum.stackexchange.com/a/23110
+
+`web3.utils.hexToAscii(val)`

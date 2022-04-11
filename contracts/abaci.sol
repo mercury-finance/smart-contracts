@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+/// abaci.sol -- price decrease functions for auctions
+
+// Copyright (C) 2020-2022 Dai Foundation
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published
@@ -61,12 +63,12 @@ contract LinearDecrease is Abacus {
     uint256 constant RAY = 10 ** 27;
     function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
         unchecked {
-            require((z = x + y) >= x);    
+            require((z = x + y) >= x);
         }
     }
     function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
         unchecked {
-            require(y == 0 || (z = x * y) / y == x);    
+            require(y == 0 || (z = x * y) / y == x);
         }
     }
     function rmul(uint256 x, uint256 y) internal pure returns (uint256 z) {
@@ -135,7 +137,7 @@ contract StairstepExponentialDecrease is Abacus {
         unchecked {
             z = x * y;
             require(y == 0 || z / y == x);
-            z = z / RAY;    
+            z = z / RAY;
         }
     }
     // optimized version from dss PR #78
@@ -225,8 +227,8 @@ contract ExponentialDecrease is Abacus {
         unchecked {
             z = x * y;
             require(y == 0 || z / y == x);
-            z = z / RAY;    
-        } 
+            z = z / RAY;
+        }
     }
     // optimized version from dss PR #78
     function rpow(uint256 x, uint256 n, uint256 b) internal pure returns (uint256 z) {

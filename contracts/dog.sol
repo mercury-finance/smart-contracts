@@ -2,7 +2,7 @@
 
 /// dog.sol -- Usb liquidation module 2.0
 
-// Copyright (C) 2020-2021 Maker Ecosystem Growth Holdings, INC.
+// Copyright (C) 2020-2022 Dai Foundation
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -118,7 +118,7 @@ contract Dog {
         }
     }
     function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        unchecked {   
+        unchecked {
             require((z = x - y) <= x);
         }
     }

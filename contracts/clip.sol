@@ -2,7 +2,7 @@
 
 /// clip.sol -- Usb auction module 2.0
 
-// Copyright (C) 2020-2021 Maker Ecosystem Growth Holdings, INC.
+// Copyright (C) 2020-2022 Dai Foundation
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published
@@ -18,7 +18,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pragma solidity ^0.8.10;
-import "hardhat/console.sol";
 
 interface VatLike {
     function move(address,address,uint256) external;
@@ -80,7 +79,7 @@ contract Clipper {
 
     struct Sale {
         uint256 pos;  // Index in active array
-        uint256 tab;  // USB to raise       [rad]
+        uint256 tab;  // Usb to raise       [rad]
         uint256 lot;  // collateral to sell [wad]
         address usr;  // Liquidated CDP
         uint96  tic;  // Auction start time
@@ -347,6 +346,7 @@ contract Clipper {
 
         address usr = sales[id].usr;
         uint96  tic = sales[id].tic;
+
         require(usr != address(0), "Clipper/not-running-auction");
 
         uint256 price;

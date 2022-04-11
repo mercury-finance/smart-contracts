@@ -318,6 +318,5 @@ describe('===MVP1===', function () {
         console.log("---After Auction Purchase")
         console.log(sale.lot);
         console.log(sale.tab);
-
     });
 });

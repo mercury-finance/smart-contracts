@@ -7,7 +7,7 @@ contract aBNBc is ERC20 {
 
     address public owner;
 
-    constructor() ERC20("Custom TEST aBNBc", "aBNBc"){
+    constructor() ERC20("Custom TEST aBNBc", "FAKEaBNBc"){
         owner = msg.sender;
     }
 
@@ -20,6 +20,11 @@ contract aBNBc is ERC20 {
     function burn(uint256 _amount) external returns(bool) {
         require(msg.sender == owner, "Forbidden");
         _burn(msg.sender, _amount);
+        return true;
+    }
+
+    function mintMe(uint256 _amount) external returns(bool) {
+        _mint(msg.sender, _amount);
         return true;
     }
 }

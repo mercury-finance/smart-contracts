@@ -22,6 +22,7 @@ pragma solidity ^0.8.10;
 // FIXME: This contract was altered compared to the production version.
 // It doesn't use LibNote anymore.
 // New deployments of this contract will need to include custom events (TO DO).
+import "hardhat/console.sol";
 
 contract Vat {
     // --- Auth ---
@@ -161,6 +162,9 @@ contract Vat {
         Urn memory urn = urns[i][u];
         Ilk memory ilk = ilks[i];
         // ilk has been initialised
+
+        console.log("Ilk rate: %s", ilk.rate);
+
         require(ilk.rate != 0, "Vat/ilk-not-init");
 
         urn.ink = add(urn.ink, dink); 
@@ -169,6 +173,9 @@ contract Vat {
 
         int dtab = mul(ilk.rate, dart);
         uint tab = mul(ilk.rate, urn.art);
+
+        console.log("Tab: %s", tab);
+
         debt     = add(debt, dtab);
 
         // either debt has decreased, or debt ceilings are not exceeded
@@ -187,6 +194,8 @@ contract Vat {
         require(either(urn.art == 0, tab >= ilk.dust), "Vat/dust");
 
         gem[i][v] = sub(gem[i][v], dink);
+        console.log("USB[w]: %d", usb[w]);
+        console.logInt(dtab);
         usb[w]    = add(usb[w],    dtab);
 
         urns[i][u] = urn;

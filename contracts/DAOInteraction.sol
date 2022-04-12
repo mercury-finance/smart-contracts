@@ -9,8 +9,6 @@ import {Usb} from "./usb.sol";
 import {Spotter, PipLike} from "./spot.sol";
 import {Jug} from "./jug.sol";
 
-import "hardhat/console.sol";
-
 contract DAOInteraction {
 
     mapping (address => uint) public wards;
@@ -40,6 +38,8 @@ contract DAOInteraction {
 
     mapping (address => uint256 ) private deposits;
     mapping (address => CollateralType) private collaterals;
+
+    uint256 constant ONE = 10 ** 27;
 
     constructor(
         address vat_,
@@ -87,7 +87,6 @@ contract DAOInteraction {
     }
 
     function deposit(address token, uint256 dink) external returns (uint256){
-        console.log("Depositiong token: %s", token);
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
@@ -105,8 +104,6 @@ contract DAOInteraction {
     }
 
     function borrow(address token, uint256 dart) external returns(uint256) {
-        console.log("Borrowing against token: %s", token);
-
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
@@ -242,11 +239,7 @@ contract DAOInteraction {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (uint256 ink, uint256 art) = vat.urns(collateralType.ilk, usr);
-        console.log("Ink is :%s", ink);
-        console.log("Art is :%s", art);
         (, uint256 rate, uint256 spot,,) = vat.ilks(collateralType.ilk);
-        console.log("Rate is :%s", rate);
-        console.log("spot is :%s", spot);
         uint256 collateral = ink * spot;
         uint256 debt = rate * art;
         return (int256(collateral) - int256(debt)) / 1e27;
@@ -299,5 +292,39 @@ contract DAOInteraction {
         (,uint256 mat) = spotter.ilks(collateralType.ilk);
         uint256 backedDebt = (art * rate / 10**36) * mat;
         return backedDebt / ink;
+    }
+
+    function rpow(uint x, uint n, uint b) internal pure returns (uint z) {
+        assembly {
+            switch x case 0 {switch n case 0 {z := b} default {z := 0}}
+            default {
+                switch mod(n, 2) case 0 { z := b } default { z := x }
+                let half := div(b, 2)  // for rounding.
+                for { n := div(n, 2) } n { n := div(n,2) } {
+                    let xx := mul(x, x)
+                    if iszero(eq(div(xx, x), x)) { revert(0,0) }
+                    let xxRound := add(xx, half)
+                    if lt(xxRound, xx) { revert(0,0) }
+                    x := div(xxRound, b)
+                    if mod(n,2) {
+                        let zx := mul(z, x)
+                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) { revert(0,0) }
+                        let zxRound := add(zx, half)
+                        if lt(zxRound, zx) { revert(0,0) }
+                        z := div(zxRound, b)
+                    }
+                }
+            }
+        }
+    }
+
+    // Returns borrow APR with 6 decimals
+    function borrowApr(address token) public view returns(uint256) {
+        CollateralType memory collateralType = collaterals[token];
+        require(collateralType.live == 1, "Interaction/inactive collateral");
+
+        (uint256 duty,) = jug.ilks(collateralType.ilk);
+        uint256 principal = rpow((jug.base() + duty), 31536000, ONE);
+        return (principal - ONE )/ (10 ** 21);
     }
 }

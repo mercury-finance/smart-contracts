@@ -7,6 +7,7 @@ require("solidity-coverage");
 require('hardhat-spdx-license-identifier');
 require('hardhat-abi-exporter');
 require('hardhat-storage-layout');
+require('@openzeppelin/hardhat-upgrades');
 const fs = require("fs");
 
 module.exports = {

@@ -2,6 +2,9 @@
 pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import {Vat} from "./vat.sol";
 import {GemJoin, UsbJoin} from "./join.sol";
@@ -9,7 +12,7 @@ import {Usb} from "./usb.sol";
 import {Spotter, PipLike} from "./spot.sol";
 import {Jug} from "./jug.sol";
 
-contract DAOInteraction {
+contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     mapping (address => uint) public wards;
     function rely(address usr) external auth { wards[usr] = 1; }
@@ -41,12 +44,12 @@ contract DAOInteraction {
 
     uint256 constant ONE = 10 ** 27;
 
-    constructor(
-        address vat_,
+    function initialize(address vat_,
         address spot_,
         address usb_,
         address usbJoin_,
-        address jug_) {
+        address jug_) public initializer {
+        __Ownable_init();
 
         wards[msg.sender] = 1;
 
@@ -57,11 +60,12 @@ contract DAOInteraction {
         jug = Jug(jug_);
 
         vat.hope(usbJoin_);
-//        vat.hope(jug_);
 
         usb.approve(usbJoin_,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
     }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     function setCollateralType(address token, address gemJoin, bytes32 ilk) external auth {
         collaterals[token] = CollateralType(GemJoin(gemJoin), ilk, 1);

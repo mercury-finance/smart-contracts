@@ -155,6 +155,14 @@ contract Vow {
         id = flapper.kick(bump, 0);
     }
 
+    // Jar Farming
+    function permit(address jar, uint8 permit_) external auth {
+        if (permit_ == 1)
+            vat.hope(jar);
+        else
+            vat.nope(jar);
+    }
+
     function cage() external auth {
         require(live == 1, "Vow/not-live");
         live = 0;

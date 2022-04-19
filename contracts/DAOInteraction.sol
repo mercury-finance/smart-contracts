@@ -366,13 +366,14 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         }
     }
 
-    // Returns borrow APR with 6 decimals
+    // Returns borrow APR with 20 decimals.
+    // I.e. 10% == 10 ethers
     function borrowApr(address token) public view returns(uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (uint256 duty,) = jug.ilks(collateralType.ilk);
         uint256 principal = rpow((jug.base() + duty), 31536000, ONE);
-        return (principal - ONE )/ (10 ** 9);
+        return (principal - ONE )/ (10 ** 7);
     }
 }

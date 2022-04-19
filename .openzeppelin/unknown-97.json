@@ -649,6 +649,434 @@
           }
         }
       }
+    },
+    "f0fe40b9301a634c1ca3fc739885a8609cbb0f7a60e1338cf4745657a79f72dd": {
+      "address": "0x9E9008e4c2Cf132e9f0774DaDb5e7354470349A7",
+      "txHash": "0x89b244ea62ce8133ef7b1be760596546b447f36e3f049a19163f5c16cc900eb1",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
+          },
+          {
+            "label": "wards",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:55"
+          },
+          {
+            "label": "vat",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_contract(VatLike)1244",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:68"
+          },
+          {
+            "label": "spotter",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_contract(SpotLike)1312",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:69"
+          },
+          {
+            "label": "usb",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_contract(UsbLike)1293",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:70"
+          },
+          {
+            "label": "usbJoin",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_contract(UsbGemLike)1274",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:71"
+          },
+          {
+            "label": "jug",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_contract(JugLike)1334",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:72"
+          },
+          {
+            "label": "deposits",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:80"
+          },
+          {
+            "label": "collaterals",
+            "offset": 0,
+            "slot": "208",
+            "type": "t_mapping(t_address,t_struct(CollateralType)1433_storage)",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:81"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(GemLike)1259": {
+            "label": "contract GemLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(JugLike)1334": {
+            "label": "contract JugLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(SpotLike)1312": {
+            "label": "contract SpotLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(UsbGemLike)1274": {
+            "label": "contract UsbGemLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(UsbLike)1293": {
+            "label": "contract UsbLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(VatLike)1244": {
+            "label": "contract VatLike",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(CollateralType)1433_storage)": {
+            "label": "mapping(address => struct DAOInteraction.CollateralType)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(CollateralType)1433_storage": {
+            "label": "struct DAOInteraction.CollateralType",
+            "members": [
+              {
+                "label": "gem",
+                "type": "t_contract(GemLike)1259",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "ilk",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "live",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          }
+        }
+      }
+    },
+    "c5e6177e0b8ef471a262235e7e55068c03cc41ab3341b5fbe874c2975635ad6c": {
+      "address": "0x8c77aF2A9259df548E94b9f1C6397CFD6B396a99",
+      "txHash": "0xe60cf9b639319f6d17a58e818a1774658b543bdb453aa30cdca22464057113a9",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
+          },
+          {
+            "label": "wards",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:55"
+          },
+          {
+            "label": "vat",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_contract(VatLike)2591",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:68"
+          },
+          {
+            "label": "spotter",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_contract(SpotLike)2659",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:69"
+          },
+          {
+            "label": "usb",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_contract(UsbLike)2640",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:70"
+          },
+          {
+            "label": "usbJoin",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_contract(UsbGemLike)2621",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:71"
+          },
+          {
+            "label": "jug",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_contract(JugLike)2681",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:72"
+          },
+          {
+            "label": "deposits",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:80"
+          },
+          {
+            "label": "collaterals",
+            "offset": 0,
+            "slot": "208",
+            "type": "t_mapping(t_address,t_struct(CollateralType)2780_storage)",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:81"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(GemLike)2606": {
+            "label": "contract GemLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(JugLike)2681": {
+            "label": "contract JugLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(SpotLike)2659": {
+            "label": "contract SpotLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(UsbGemLike)2621": {
+            "label": "contract UsbGemLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(UsbLike)2640": {
+            "label": "contract UsbLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(VatLike)2591": {
+            "label": "contract VatLike",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(CollateralType)2780_storage)": {
+            "label": "mapping(address => struct DAOInteraction.CollateralType)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(CollateralType)2780_storage": {
+            "label": "struct DAOInteraction.CollateralType",
+            "members": [
+              {
+                "label": "gem",
+                "type": "t_contract(GemLike)2606",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "ilk",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "live",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          }
+        }
+      }
     }
   }
 }

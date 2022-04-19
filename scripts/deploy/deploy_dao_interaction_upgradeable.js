@@ -1,4 +1,6 @@
 const hre = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
+require("@nomiclabs/hardhat-etherscan");
 
 const { VAT,
     SPOT,
@@ -11,20 +13,26 @@ const { VAT,
     REAL_ABNBC,
     REALaBNBcJoin,
 } = require('../../addresses.json');
-const {ethers} = require("hardhat");
 
 async function main() {
     console.log('Running deploy script');
 
-    this.Interaction = await hre.ethers.getContractFactory("DAOInteraction");
-
-    const interaction = await this.Interaction.deploy(
-        VAT,
+    Interaction = await hre.ethers.getContractFactory("DAOInteraction");
+    const interaction = await upgrades.deployProxy(Interaction, [VAT,
         SPOT,
         USB,
         UsbJoin,
-        JUG
-    );
+        JUG], {
+        initializer: "initialize"
+    });
+
+    // const interaction = await this.Interaction.deploy(
+    //     VAT,
+    //     SPOT,
+    //     USB,
+    //     UsbJoin,
+    //     JUG
+    // );
     await interaction.deployed();
     console.log("interaction deployed to:", interaction.address);
 
@@ -35,17 +43,23 @@ async function main() {
     await vat.rely(interaction.address);
 
     console.log('Validating code');
+    let interactionImplAddress = await upgrades.erc1967.getImplementationAddress(interaction.address);
+    console.log("Interaction implementation: ", interactionImplAddress);
 
     await hre.run("verify:verify", {
-        address: interaction.address,
-        constructorArguments: [
-            VAT,
-            SPOT,
-            USB,
-            UsbJoin,
-            JUG,
-        ],
+        address: interactionImplAddress,
     });
+    //
+    // await hre.run("verify:verify", {
+    //     address: interaction.address,
+    //     constructorArguments: [
+    //         VAT,
+    //         SPOT,
+    //         USB,
+    //         UsbJoin,
+    //         JUG,
+    //     ],
+    // });
 
     console.log('Adding collateral types');
     // let collateral = ethers.utils.formatBytes32String("aBNBc");

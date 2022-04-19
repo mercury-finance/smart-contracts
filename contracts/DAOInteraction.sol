@@ -6,11 +6,49 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-import {Vat} from "./vat.sol";
-import {GemJoin, UsbJoin} from "./join.sol";
-import {Usb} from "./usb.sol";
-import {Spotter, PipLike} from "./spot.sol";
-import {Jug} from "./jug.sol";
+interface VatLike {
+    function init(bytes32 ilk) external;
+    function hope(address usr) external;
+    function rely(address usr) external;
+    function move(address src, address dst, uint256 rad) external;
+    function behalf(address bit, address usr) external;
+    function frob(bytes32 i, address u, address v, address w, int dink, int dart) external;
+    function flux(bytes32 ilk, address src, address dst, uint256 wad) external;
+
+    function ilks(bytes32) external view returns(uint256, uint256, uint256, uint256, uint256);
+    function gem(bytes32, address) external view returns(uint256);
+    function urns(bytes32, address) external view returns(uint256, uint256);
+}
+
+interface GemLike {
+    function join(address usr, uint wad) external;
+    function exit(address usr, uint wad) external;
+}
+
+interface UsbGemLike {
+    function join(address usr, uint wad) external;
+    function exit(address usr, uint wad) external;
+}
+
+interface UsbLike {
+    function approve(address usr, uint wad) external returns (bool);
+    function transferFrom(address src, address dst, uint wad) external;
+}
+
+interface PipLike {
+    function peek() external view returns (bytes32, bool);
+}
+
+interface SpotLike {
+    function ilks(bytes32) external view returns(PipLike, uint256);
+}
+
+interface JugLike {
+    function drip(bytes32 ilk) external returns (uint256);
+
+    function ilks(bytes32) external view returns(uint256, uint256);
+    function base() external view returns (uint256);
+}
 
 contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
@@ -27,14 +65,14 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     event Payback(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
 
-    Vat public vat;
-    Spotter public spotter;
-    Usb public usb;
-    UsbJoin public usbJoin;
-    Jug public jug;
+    VatLike public vat;
+    SpotLike public spotter;
+    UsbLike public usb;
+    UsbGemLike public usbJoin;
+    JugLike public jug;
 
     struct CollateralType {
-        GemJoin gem;
+        GemLike gem;
         bytes32 ilk;
         uint32 live;
     }
@@ -53,11 +91,11 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         wards[msg.sender] = 1;
 
-        vat = Vat(vat_);
-        spotter = Spotter(spot_);
-        usb = Usb(usb_);
-        usbJoin = UsbJoin(usbJoin_);
-        jug = Jug(jug_);
+        vat = VatLike(vat_);
+        spotter = SpotLike(spot_);
+        usb = UsbLike(usb_);
+        usbJoin = UsbGemLike(usbJoin_);
+        jug = JugLike(jug_);
 
         vat.hope(usbJoin_);
 
@@ -68,11 +106,17 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
     function setCollateralType(address token, address gemJoin, bytes32 ilk) external auth {
-        collaterals[token] = CollateralType(GemJoin(gemJoin), ilk, 1);
+        collaterals[token] = CollateralType(GemLike(gemJoin), ilk, 1);
         IERC20(token).approve(gemJoin,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
         vat.init(ilk);
         vat.rely(gemJoin);
+    }
+
+    function enableCollateralType(address token, address gemJoin, bytes32 ilk) external auth {
+        collaterals[token] = CollateralType(GemLike(gemJoin), ilk, 1);
+        IERC20(token).approve(gemJoin,
+            115792089237316195423570985008687907853269984665640564039457584007913129639935);
     }
 
     function removeCollateralType(address token, address gemJoin) external auth {
@@ -101,7 +145,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         deposits[token] += dink;
 
-//        drip(token);
+        //        drip(token);
 
         emit Deposit(msg.sender, dink);
         return dink;
@@ -160,9 +204,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         jug.drip(collateralType.ilk);
     }
 
-//    /////////////////////////////////
-//    //// VIEW                    ////
-//    /////////////////////////////////
+    //    /////////////////////////////////
+    //    //// VIEW                    ////
+    //    /////////////////////////////////
 
     // Price of the collateral asset(aBNBc) from Oracle
     function collateralPrice(address token) public view returns (uint256) {
@@ -199,7 +243,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     // Total aBNBc deposited nominated in $
     function depositTVL(address token) external view returns (uint256) {
-        return deposits[token] * collateralPrice(token);
+        return deposits[token] * collateralPrice(token) / 10 ** 18;
     }
 
     // Total USB borrowed by all users

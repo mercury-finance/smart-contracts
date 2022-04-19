@@ -207,6 +207,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         let dink = ether("2").toString();
 
         await abnbc.connect(signer1).approve(interaction.address, dink);
+        // Deposit collateral(aBNBc) to the interaction contract
         await interaction.connect(signer1).deposit(abnbc.address, dink);
 
         let s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
@@ -222,7 +223,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
 
         // Locking collateral and borrowing USB
         // We want to draw 60 USB == `dart`
-
+        // Maximum available for borrow = (2 * 400 ) * 0.8 = 640
         let dart = ether("60").toString();
         await interaction.connect(signer1).borrow(abnbc.address, dart);
 
@@ -241,11 +242,13 @@ describe('===INTERACTION2-Multicollateral===', function () {
         let available = await interaction.connect(signer1).availableToBorrow(abnbc.address, signer1.address);
         expect(available.toString()).to.equal(ether("580").toString());
 
+        // 2 * 37.5 * 0.8 == 60$
         let liquidationPrice = await interaction.connect(signer1).currentLiquidationPrice(abnbc.address, signer1.address);
         expect(liquidationPrice.toString()).to.equal(ether("37.5").toString());
         // console.log("Liq.price is: " + liquidationPrice.toString());
 
-        let estLiquidationPrice = await interaction.connect(signer1).estimatedLiquidationPrice(abnbc.address, signer1.address, ether("1").toString());
+        // ( 2 + 1 ) * 25 * 0.8 == 60$
+        let estLiquidationPrice = await interaction.connect(signer1).estimatedLiquidationPrice(abnbc.address, signer1.address, ether("-1").toString());
         expect(estLiquidationPrice.toString()).to.equal(ether("25").toString());
         console.log("Est.Liq.price is: " + estLiquidationPrice.toString());
 
@@ -257,6 +260,16 @@ describe('===INTERACTION2-Multicollateral===', function () {
         availableYear = await interaction.connect(signer1).availableToBorrow(abnbc.address, signer1.address);
         expect(availableYear.toString()).to.equal("573999998163349153602"); //roughly 10 percents less.
     });
+
+    // 100 BNB -> Ankr
+    // 100 aBNBc <-- Ankr 7%
+    // 100 aBNBc --> Helio
+    // XXX DAI <-- Helio (mint)
+    // DAI -> Jar contract (modified MakerDAO Pot) 10%
+    // jar is similar to pot but pot has no rewards limit and the interest is based on the percentage of deposit
+    // jar has rewards limit and interest is based on percentage share of deposits from fixed emission
+    // DAI*(1 + fees%) --> Helio
+    // MKR token <-- Helio (amount of MKR == stability fee)
 
     it('payback and withdraw', async function() {
         let dart = ether("60").toString();

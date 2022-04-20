@@ -13,7 +13,8 @@ describe('===Jar===', function () {
 
     let vat, 
         spot, 
-        abnbc, 
+        abnbc,
+        husb, 
         gemJoin, 
         jug,
         vow,
@@ -107,6 +108,11 @@ describe('===Jar===', function () {
         await proxyLike.connect(deployer).jugInitFile(collateral, ethers.utils.formatBytes32String("duty"), "0000000000312410000000000000"); // 1% Yearly Factored
         await jug.connect(deployer)["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), vow.address);
 
+        // Initialize Jar Module
+        husb = await this.Usb.connect(deployer).deploy(97);
+        await husb.deployed(); // The derivative token. Non Transferable
+        husb.connect(deployer).rely(jar.address);
+
         // Signer1, Signer2 and Signer3 have some aBNBc
         await abnbc.connect(deployer).mint(signer1.address, ethers.utils.parseEther("5000"));
         await abnbc.connect(deployer).mint(signer2.address, ethers.utils.parseEther("5000"));
@@ -166,20 +172,20 @@ describe('===Jar===', function () {
         it('reverts Jar/not-live', async function () {
             await jar.connect(deployer).cage();
             let time = (await ethers.provider.getBlock()).timestamp;
-            await expect(jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), time + 5, time + 30)).to.be.revertedWith("Jar/not-live");
+            await expect(jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), time + 5, time + 30, husb.address)).to.be.revertedWith("Jar/not-live");
         });
         it('reverts Jar/wrong-interval', async function () {
             let time = (await ethers.provider.getBlock()).timestamp;
-            await expect(jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), time + 50, time + 4)).to.be.revertedWith("Jar/wrong-interval");
+            await expect(jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), time + 50, time + 4, husb.address)).to.be.revertedWith("Jar/wrong-interval");
         });
         it('reverts Jar/file-unrecognized-param', async function () {
             let time = (await ethers.provider.getBlock()).timestamp;
-            await expect(jar.connect(deployer).file(ethers.utils.formatBytes32String("asdf"), ethers.utils.parseEther("200"), time + 5, time + 40)).to.be.revertedWith("Jar/file-unrecognized-param");
+            await expect(jar.connect(deployer).file(ethers.utils.formatBytes32String("asdf"), ethers.utils.parseEther("200"), time + 5, time + 40, husb.address)).to.be.revertedWith("Jar/file-unrecognized-param");
         });
         it('should create new plate via file', async function () {
             let time = (await ethers.provider.getBlock()).timestamp;
             await vow.connect(deployer).permit(jar.address, 1);
-            await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), time + 5, time + 40);
+            await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), time + 5, time + 40, husb.address);
         });
     })
 
@@ -207,7 +213,7 @@ describe('===Jar===', function () {
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
 
                 await vow.connect(deployer).permit(jar.address, 1);
-                await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), tau + 50, tau + 100); // 4 USB per second
+                await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), tau + 50, tau + 100, husb.address); // 4 USB per second
 
                 await network.provider.send("evm_mine"); // 49 sec to start
 
@@ -239,9 +245,9 @@ describe('===Jar===', function () {
 
                 await network.provider.send("evm_mine"); // 46 sec to start
 
-                expect((await jar.people(1, signer1.address)).pile).to.equal("10" + wad);
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer1.address)).to.equal("10" + wad);
+                expect(await husb.balanceOf(signer2.address)).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer3.address)).to.equal("5" + wad);
                 expect((await jar.plates(1)).Pile).to.equal("20" + wad);
                 expect((await jar.plates(1)).fps).to.equal("0");
 
@@ -254,12 +260,12 @@ describe('===Jar===', function () {
 
                 await network.provider.send("evm_mine"); // 45 sec to start
 
-                expect((await jar.people(1, signer1.address)).pile).to.equal("10" + wad);
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer1.address)).to.equal("10" + wad);
+                expect(await husb.balanceOf(signer2.address)).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer3.address)).to.equal("5" + wad);
                 expect((await jar.plates(1)).Pile).to.equal("20" + wad);
                 expect((await jar.plates(1)).fps).to.equal("0");
-                
+
                 // console.log((await jar.plates(1)).start - (await ethers.provider.getBlock()).timestamp);
                 await network.provider.send("evm_setAutomine", [true]);
             }
@@ -282,7 +288,7 @@ describe('===Jar===', function () {
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
 
                 await vow.connect(deployer).permit(jar.address, 1);
-                await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), tau + 1, tau + 51); // 4 USB per second
+                await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), tau + 1, tau + 51, husb.address); // 4 USB per second
 
                 await network.provider.send("evm_mine"); // Started 0 sec
 
@@ -314,9 +320,9 @@ describe('===Jar===', function () {
 
                 await network.provider.send("evm_mine"); // Started 3 sec
 
-                expect((await jar.people(1, signer1.address)).pile).to.equal("10" + wad);
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer1.address)).to.equal("10" + wad);
+                expect(await husb.balanceOf(signer2.address)).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer3.address)).to.equal("5" + wad);
                 expect((await jar.plates(1)).Pile).to.equal("20" + wad);
                 expect((await jar.plates(1)).fps).to.equal("666666666666666666666666666");
                 expect(await jar.Eaten()).to.equal("0");
@@ -328,9 +334,9 @@ describe('===Jar===', function () {
 
                 await network.provider.send("evm_mine"); // Started 8 sec
 
-                expect((await jar.people(1, signer1.address)).pile).to.equal("10" + wad);
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer1.address)).to.equal("10" + wad);
+                expect(await husb.balanceOf(signer2.address)).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer3.address)).to.equal("5" + wad);
                 expect((await jar.plates(1)).Pile).to.equal("20" + wad);
                 expect(await jar.Eaten()).to.equal("5000000000000000000"); // Signer3 '5' claimed
 
@@ -357,7 +363,7 @@ describe('===Jar===', function () {
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
 
                 await vow.connect(deployer).permit(jar.address, 1);
-                await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), tau + 1, tau + 51); // 4 USB per second
+                await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), tau + 1, tau + 51, husb.address); // 4 USB per second
 
                 await network.provider.send("evm_mine"); // Started 0 sec
 
@@ -389,9 +395,9 @@ describe('===Jar===', function () {
 
                 await network.provider.send("evm_mine"); // Started 3 sec
 
-                expect((await jar.people(1, signer1.address)).pile).to.equal("10" + wad);
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer1.address)).to.equal("10" + wad);
+                expect(await husb.balanceOf(signer2.address)).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer3.address)).to.equal("5" + wad);
                 expect((await jar.plates(1)).Pile).to.equal("20" + wad);
                 expect((await jar.plates(1)).fps).to.equal("666666666666666666666666666");
                 expect(await jar.Eaten()).to.equal("0");
@@ -405,11 +411,11 @@ describe('===Jar===', function () {
 
                 await network.provider.send("evm_mine"); // Started 50 sec
 
-                expect((await jar.people(1, signer1.address)).pile).to.equal("20" + wad);
+                expect(await husb.balanceOf(signer1.address)).to.equal("20" + wad);
                 expect((await jar.people(1, signer1.address)).spoon).to.equal("100666666666666666666");
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer2.address)).to.equal("5" + wad);
                 expect((await jar.people(1, signer2.address)).spoon).to.equal("48333333333333333333");
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer3.address)).to.equal("5" + wad);
                 expect((await jar.people(1, signer3.address)).spoon).to.equal("47000000000000000000");
                 expect((await jar.plates(1)).Pile).to.equal("30" + wad);
                 expect(await jar.Eaten()).to.equal("0");
@@ -423,11 +429,11 @@ describe('===Jar===', function () {
 
                 await network.provider.send("evm_mine"); // Started 51 sec
 
-                expect((await jar.people(1, signer1.address)).pile).to.equal("20" + wad);
+                expect(await husb.balanceOf(signer1.address)).to.equal("20" + wad);
                 expect((await jar.people(1, signer1.address)).spoon).to.equal("0");
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer2.address)).to.equal("5" + wad);
                 expect((await jar.people(1, signer2.address)).spoon).to.equal("0");
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
+                expect(await husb.balanceOf(signer3.address)).to.equal("5" + wad);
                 expect((await jar.people(1, signer3.address)).spoon).to.equal("0");
                 expect((await jar.plates(1)).Pile).to.equal("30" + wad);
                 expect(await jar.Eaten()).to.equal("195999999999999999999");
@@ -439,9 +445,3 @@ describe('===Jar===', function () {
         });
     })
 });
-
-// async function mine(jump) {
-//     tau = (await ethers.provider.getBlock()).timestamp;
-//     await network.provider.send("evm_setNextBlockTimestamp", [tau + jump]);
-//     await network.provider.send("evm_mine");
-// }

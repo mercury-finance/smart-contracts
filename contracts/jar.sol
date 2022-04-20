@@ -31,6 +31,12 @@ interface VatLike {
     function move(address,address,uint256) external;
 }
 
+interface DSTokenLike {
+    function mint(address,uint) external;
+    function burn(address,uint) external;
+    function balanceOf(address) external returns(uint);
+}
+
 contract Jar {
     // --- Auth ---
     mapping (address => uint) public wards;
@@ -43,15 +49,15 @@ contract Jar {
 
     // --- Data ---
     struct Plate {
-        uint rate;    // Food per second        [wad]
-        uint start;   // Start of distribution  [sec]
-        uint end;     // End of distribution    [sec]
-        uint check;   // Last reward time       [sec]
-        uint fps;     // Food Per Share         [ray]
-        uint Pile;    // Total join deposits    [wad]
+        uint rate;         // Food per second        [wad]
+        uint start;        // Start of distribution  [sec]
+        uint end;          // End of distribution    [sec]
+        uint check;        // Last reward time       [sec]
+        uint fps;          // Food Per Share         [ray]
+        uint Pile;         // Total join deposits    [wad]
+        DSTokenLike piles; // Derivative token
     }
     struct Person {
-        uint pile;   // Join Deposit       [wad]
         uint ate;    // Claimed Rewards    [wad]
         uint spoon;  // Claimable Rewards  [wad]
     }
@@ -100,7 +106,7 @@ contract Jar {
     }
 
     // --- Administration ---
-    function file(bytes32 what, uint256 wad, uint256 start, uint256 end) external auth {
+    function file(bytes32 what, uint256 wad, uint256 start, uint256 end, address derivative_) external auth {
         require(live == 1, "Jar/not-live");    
         require(start < end, "Jar/wrong-interval");
         if (what == "plate") {
@@ -110,6 +116,7 @@ contract Jar {
             plate.start = start;
             plate.end = end; 
             plate.check = start;
+            plate.piles = DSTokenLike(derivative_);
             plates[current] = plate;
         } else revert("Jar/file-unrecognized-param");
         vat.move(vow, address(this), _mul(wad, ONE));
@@ -139,12 +146,12 @@ contract Jar {
         Person storage person = people[current][msg.sender];
 
         updatePlate(current);
-        uint spoon = _sub(_rmul(person.pile, plate.fps), person.ate);
+        uint spoon = _sub(_rmul(plate.piles.balanceOf(msg.sender), plate.fps), person.ate);
         person.spoon = _add(person.spoon, spoon);
 
         plate.Pile = _add(plate.Pile, wad);
-        person.pile = _add(person.pile, wad);
-        person.ate = _rmul(person.pile, plate.fps);
+        plate.piles.mint(msg.sender, wad);
+        person.ate = _rmul(plate.piles.balanceOf(msg.sender), plate.fps);
 
         vat.move(msg.sender, address(this), _mul(wad, ONE));
     }
@@ -157,18 +164,18 @@ contract Jar {
 
         // respect withdraw lock period
         if (wad != 0) require(block.timestamp >= plate.end, "Jar/plate-not-ended");
-        require(person.pile >= wad, "Jar/insufficient-balance");
+        require(plate.piles.balanceOf(msg.sender) >= wad, "Jar/insufficient-balance");
 
         updatePlate(plate_);
-        uint spoon = _sub(_rmul(person.pile, plate.fps), person.ate);
+        uint spoon = _sub(_rmul(plate.piles.balanceOf(msg.sender), plate.fps), person.ate);
         spoon = _add(person.spoon, spoon);
         Eaten = _add(Eaten, spoon);
         delete person.spoon;
         vat.move(address(this), msg.sender, _mul(spoon, ONE));
 
         plate.Pile = _sub(plate.Pile, wad);
-        person.pile = _sub(person.pile, wad);
-        person.ate = _rmul(person.pile, plate.fps);
+        plate.piles.burn(msg.sender, wad);
+        person.ate = _rmul(plate.piles.balanceOf(msg.sender), plate.fps);
 
         vat.move(address(this), msg.sender, _mul(wad, ONE));
     }

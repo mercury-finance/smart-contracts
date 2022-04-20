@@ -87,13 +87,13 @@ contract Dog {
     event File(bytes32 indexed ilk, bytes32 indexed what, address clip);
 
     event Bark(
-        bytes32 indexed ilk,
-        address indexed urn,
-        uint256 ink,
-        uint256 art,
-        uint256 due,
-        address clip,
-        uint256 indexed id
+      bytes32 indexed ilk,
+      address indexed urn,
+      uint256 ink,
+      uint256 art,
+      uint256 due,
+      address clip,
+      uint256 indexed id
     );
     event Digs(bytes32 indexed ilk, uint256 rad);
     event Cage();
@@ -113,19 +113,19 @@ contract Dog {
         z = x <= y ? x : y;
     }
     function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
-    unchecked {
-        require((z = x + y) >= x);
-    }
+        unchecked {
+            require((z = x + y) >= x);
+        }
     }
     function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-    unchecked {
-        require((z = x - y) <= x);
-    }
+        unchecked {
+            require((z = x - y) <= x);
+        }
     }
     function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
-    unchecked {
-        require(y == 0 || (z = x * y) / y == x);
-    }
+        unchecked {
+            require(y == 0 || (z = x * y) / y == x);
+        }
     }
 
     // --- Administration ---
@@ -232,10 +232,10 @@ contract Dog {
             ilks[ilk].dirt = add(milk.dirt, tab);
 
             id = ClipperLike(milk.clip).kick({
-            tab: tab,
-            lot: dink,
-            usr: urn,
-            kpr: kpr
+                tab: tab,
+                lot: dink,
+                usr: urn,
+                kpr: kpr
             });
         }
 

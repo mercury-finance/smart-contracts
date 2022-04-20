@@ -83,14 +83,14 @@ contract Vow {
 
     // --- Math ---
     function add(uint x, uint y) internal pure returns (uint z) {
-    unchecked {
-        require((z = x + y) >= x);
-    }
+        unchecked {
+            require((z = x + y) >= x);
+        }
     }
     function sub(uint x, uint y) internal pure returns (uint z) {
-    unchecked {
-        require((z = x - y) <= x);
-    }
+        unchecked {
+            require((z = x - y) <= x);
+        }
     }
     function min(uint x, uint y) internal pure returns (uint z) {
         return x <= y ? x : y;
@@ -153,6 +153,14 @@ contract Vow {
         require(vat.usb(address(this)) >= add(add(vat.sin(address(this)), bump), hump), "Vow/insufficient-surplus");
         require(sub(sub(vat.sin(address(this)), Sin), Ash) == 0, "Vow/debt-not-zero");
         id = flapper.kick(bump, 0);
+    }
+
+    // Jar Farming
+    function permit(address jar, uint8 permit_) external auth {
+        if (permit_ == 1)
+            vat.hope(jar);
+        else
+            vat.nope(jar);
     }
 
     function cage() external auth {

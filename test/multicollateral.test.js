@@ -200,7 +200,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         expect(locked.toString()).to.equal("0");
 
         let borrowApr = await interaction.borrowApr(abnbc.address, {from: signer1.address});
-        expect(borrowApr.toString()).to.equal("100000");
+        expect(borrowApr.toString()).to.equal("10000000069041365947");
     });
 
     it('put collateral and borrow', async function () {

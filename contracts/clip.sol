@@ -186,34 +186,34 @@ contract Clipper {
         z = x <= y ? x : y;
     }
     function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
-    unchecked {
-        require((z = x + y) >= x);
-    }
+        unchecked {
+            require((z = x + y) >= x);
+        }
     }
     function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-    unchecked {
-        require((z = x - y) <= x);
-    }
+        unchecked {
+            require((z = x - y) <= x);
+        }
     }
     function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
-    unchecked {
-        require(y == 0 || (z = x * y) / y == x);
-    }
+        unchecked {
+            require(y == 0 || (z = x * y) / y == x);
+        }
     }
     function wmul(uint256 x, uint256 y) internal pure returns (uint256 z) {
-    unchecked {
-        z = mul(x, y) / WAD;
-    }
+        unchecked {
+            z = mul(x, y) / WAD;
+        }
     }
     function rmul(uint256 x, uint256 y) internal pure returns (uint256 z) {
-    unchecked {
-        z = mul(x, y) / RAY;
-    }
+        unchecked {
+            z = mul(x, y) / RAY;
+        }
     }
     function rdiv(uint256 x, uint256 y) internal pure returns (uint256 z) {
-    unchecked {
-        z = mul(x, RAY) / y;
-    }
+        unchecked {
+            z = mul(x, RAY) / y;
+        }
     }
 
     // --- Auction ---
@@ -320,7 +320,7 @@ contract Clipper {
     }
 
     // Buy up to `amt` of collateral from the auction indexed by `id`.
-    //
+    // 
     // Auctions will not collect more USB than their assigned USB target,`tab`;
     // thus, if `amt` would cost more USB than `tab` at the current price, the
     // amount of collateral purchased will instead be just enough to collect `tab` USB.

@@ -28,23 +28,42 @@ module.exports = {
 	
 	networks: {
 		// hardhat: {
-      // // allowUnlimitedContractSize: true,
+      // allowUnlimitedContractSize: true,
 		// 	forking: {
 		// 		url: "https://rpc.ftm.tools",
 		// 		accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
 		// 		blockNumber: 32968090
 		// 	}
 		// },
-    bsc: {
+		// hardhat: {
+		// // allowUnlimitedContractSize: true,
+		// 	forking: {
+		// 		url: "https://rpc.ftm.tools",
+		// 		accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
+		// 		blockNumber: 32968090
+		// 	}
+		// },
+		// 	hardhat: {
+		//   // allowUnlimitedContractSize: true,
+		// 		forking: {
+		// 			url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS_PROJECT_ID}/bsc/mainnet`,
+		// 			accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
+		// 			blockNumber: 16682038
+		// 		}
+		// 	},
+
+		bsc: {
       url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS_PROJECT_ID}/bsc/mainnet`,
       chainId: 56,
       accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`]
     },
+
     bsc_testnet: {
       url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS_PROJECT_ID}/bsc/testnet`,
       chainId: 97,
       accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`]
     },
+
 	},
 
 	etherscan: {

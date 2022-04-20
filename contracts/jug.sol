@@ -59,7 +59,7 @@ contract Jug {
     }
 
     // --- Math ---
-    function rpow(uint x, uint n, uint b) internal pure returns (uint z) {
+    function _rpow(uint x, uint n, uint b) internal pure returns (uint z) {
       assembly {
         switch x case 0 {switch n case 0 {z := b} default {z := 0}}
         default {
@@ -83,19 +83,19 @@ contract Jug {
       }
     }
     uint256 constant ONE = 10 ** 27;
-    function add(uint x, uint y) internal pure returns (uint z) {
+    function _add(uint x, uint y) internal pure returns (uint z) {
         unchecked {
             z = x + y;
             require(z >= x);
         }
     }
-    function diff(uint x, uint y) internal pure returns (int z) {
+    function _diff(uint x, uint y) internal pure returns (int z) {
         unchecked {
             z = int(x) - int(y);
             require(int(x) >= 0 && int(y) >= 0);
         }
     }
-    function rmul(uint x, uint y) internal pure returns (uint z) {
+    function _rmul(uint x, uint y) internal pure returns (uint z) {
         unchecked {
             z = x * y;
             require(y == 0 || z / y == x);
@@ -128,8 +128,8 @@ contract Jug {
     function drip(bytes32 ilk) external returns (uint rate) {
         require(block.timestamp >= ilks[ilk].rho, "Jug/invalid-now");
         (, uint prev) = vat.ilks(ilk);
-        rate = rmul(rpow(add(base, ilks[ilk].duty), block.timestamp - ilks[ilk].rho, ONE), prev);
-        vat.fold(ilk, vow, diff(rate, prev));
+        rate = _rmul(_rpow(_add(base, ilks[ilk].duty), block.timestamp - ilks[ilk].rho, ONE), prev);
+        vat.fold(ilk, vow, _diff(rate, prev));
         ilks[ilk].rho = block.timestamp;
     }
 }

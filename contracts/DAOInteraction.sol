@@ -204,14 +204,6 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         jug.drip(collateralType.ilk);
     }
 
-
-    function enterEarn(uint256 amount) external {
-        usb.transferFrom(msg.sender, address(this), amount);
-
-
-        emit EnteredEarn(msg.sender, amount);
-    }
-
     //    /////////////////////////////////
     //    //// VIEW                    ////
     //    /////////////////////////////////

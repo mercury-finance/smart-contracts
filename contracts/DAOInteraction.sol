@@ -50,6 +50,10 @@ interface JugLike {
     function base() external view returns (uint256);
 }
 
+interface DogLike {
+    function bark(bytes32 ilk, address urn, address kpr) external returns (uint256 id);
+}
+
 contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     mapping (address => uint) public wards;
@@ -70,6 +74,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     UsbLike public usb;
     UsbGemLike public usbJoin;
     JugLike public jug;
+    DogLike public dog;
+    
 
     struct CollateralType {
         GemLike gem;
@@ -82,11 +88,14 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     uint256 constant ONE = 10 ** 27;
 
-    function initialize(address vat_,
+    function initialize(
+        address vat_,
         address spot_,
         address usb_,
         address usbJoin_,
-        address jug_) public initializer {
+        address jug_,
+        address dog_
+    ) public initializer {
         __Ownable_init();
 
         wards[msg.sender] = 1;
@@ -96,6 +105,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         usb = UsbLike(usb_);
         usbJoin = UsbGemLike(usbJoin_);
         jug = JugLike(jug_);
+        dog = DogLike(dog_);
 
         vat.hope(usbJoin_);
 
@@ -375,5 +385,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         (uint256 duty,) = jug.ilks(collateralType.ilk);
         uint256 principal = rpow((jug.base() + duty), 31536000, ONE);
         return (principal - ONE )/ (10 ** 7);
+    }
+
+    function startAuction(bytes32 collateralType, address user, address keeper) public returns (uint256) {
+        return dog.bark(collateralType, user, keeper);
     }
 }

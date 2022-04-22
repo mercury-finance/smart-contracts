@@ -94,6 +94,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
             usb.address,
             usbJoin.address,
             jug.address,
+            ethers.constants.AddressZero
         );
         //////////////////////////////
         /** Initial Setup -------- **/

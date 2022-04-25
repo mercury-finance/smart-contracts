@@ -44,6 +44,15 @@ Unlock and transfer funds to the user
 * `estimatedLiquidationPrice(<token>, <user_address>, <amount>)` - Price of aBNBc when user will be liquidated with additional amount of aBNBc deposited/withdraw
 * `borrowApr(<token>)` - Percent value, yearly APY with 6 decimals
 
+
+## REWARDS
+
+### Reward balance
+`pendingRewards(<user_address>)` - Maximum amount of tokens that can be claimed by user.
+
+### Claim
+`claim(<user_address>, <amount>)` - Claim `amount` of user tokens and transfer them to the `user` wallet
+
 ## ABIs
 [INTERACTION ABI](interfaces/DAOInteraction.json)
 

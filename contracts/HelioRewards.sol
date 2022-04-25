@@ -3,12 +3,16 @@ pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "./hMAth.sol";
+import "./hMath.sol";
 
 interface VatLike {
-    function ilks(bytes32) external returns (
+    function ilks(bytes32) external view returns (
         uint256 Art,   // [wad]
         uint256 rate   // [ray]
+    );
+    function urns(bytes32, address) external view  returns (
+        uint256 ink,   // [wad]
+        uint256 art   // [ray]
     );
     function fold(bytes32,address,int) external;
 }
@@ -41,7 +45,7 @@ contract HelioRewards {
     }
 
     modifier poolInit {
-        require(ilks[ilk].rho != 0, "Reward/not-init");
+        require(ilks[poolIlk].rho != 0, "Reward/not-init");
         _;
     }
 
@@ -65,20 +69,28 @@ contract HelioRewards {
         live = 0;
     }
 
-    function initPool(bytes32 ilk) {
+    function initPool(bytes32 ilk) external auth {
         ilks[ilk] = Ilk(0, block.timestamp);
         poolIlk = ilk;
+    }
+
+    function setHelioToken(address helioToken_) external auth {
+        helioToken = helioToken_;
     }
 
     function helioPrice() public view returns(uint256) {
         return 100000000000000000; //FIXME: HARDCODED 10 cents
     }
 
+    // FIXME FRO DEBUG
+    function addRewards(address usr, uint256 amount) external poolInit auth {
+        unclaimedRewards[usr] += amount;
+    }
+
     function pendingRewards(address usr) public poolInit view returns(uint256) {
-        (,uint256 rate,,,) = vat.ilks(poolIlk);
+        (uint256 totalDebt, uint256 rate) = vat.ilks(poolIlk);
         (, uint256 art) = vat.urns(poolIlk, usr);
         uint256 usrDebt = hMath.mulDiv(art, rate, 10 ** 27);
-        (uint256 totalDebt, uint256 rate) = vat.ilks(poolIlk);
         uint256 shares = hMath.mulDiv(usrDebt, rewardsPool, totalDebt);
         return unclaimedRewards[usr] + shares - claimedRewards[usr];
     }
@@ -107,11 +119,11 @@ contract HelioRewards {
     // Rewards pool update
     function drip(bytes32 ilk) external poolInit {
         require(block.timestamp >= ilks[ilk].rho, "Reward/invalid-now");
-        rate = hMath._rpow(ilks[ilk].rewardRate, block.timestamp - ilks[ilk].rho, ONE);
+        uint256 rate = hMath._rpow(ilks[ilk].rewardRate, block.timestamp - ilks[ilk].rho, ONE);
         ilks[ilk].rho = block.timestamp;
 
         (uint256 totalDebt,) = vat.ilks(poolIlk);
         uint256 rewards = hMath.mulDiv(rate, totalDebt, 10 ** 27); //$ amount
-        rewardsPool += hMath.muldiv(rewards , helioPrice, 10 ** 18);
+        rewardsPool += hMath.mulDiv(rewards , helioPrice(), 10 ** 18);
     }
 }

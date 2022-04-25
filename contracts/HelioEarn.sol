@@ -12,19 +12,19 @@ interface VowLike {
     function permit(address jar, uint8 permit_) external;
 }
 
-interface VatLike {
-    function init(bytes32 ilk) external;
-    function hope(address usr) external;
-    function rely(address usr) external;
-    function move(address src, address dst, uint256 rad) external;
-    function behalf(address bit, address usr) external;
-    function frob(bytes32 i, address u, address v, address w, int dink, int dart) external;
-    function flux(bytes32 ilk, address src, address dst, uint256 wad) external;
-
-    function ilks(bytes32) external view returns(uint256, uint256, uint256, uint256, uint256);
-    function gem(bytes32, address) external view returns(uint256);
-    function urns(bytes32, address) external view returns(uint256, uint256);
-}
+//interface VatLike {
+//    function init(bytes32 ilk) external;
+//    function hope(address usr) external;
+//    function rely(address usr) external;
+//    function move(address src, address dst, uint256 rad) external;
+//    function behalf(address bit, address usr) external;
+//    function frob(bytes32 i, address u, address v, address w, int dink, int dart) external;
+//    function flux(bytes32 ilk, address src, address dst, uint256 wad) external;
+//
+//    function ilks(bytes32) external view returns(uint256, uint256, uint256, uint256, uint256);
+//    function gem(bytes32, address) external view returns(uint256);
+//    function urns(bytes32, address) external view returns(uint256, uint256);
+//}
 
 
 contract HelioEarn is Initializable, UUPSUpgradeable, OwnableUpgradeable {
@@ -58,29 +58,30 @@ contract HelioEarn is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
     function createPool(uint256 poolSize, uint256 start, uint256 end) external onlyOwner returns(address) {
-        jar = new Jar(address(vat), address(vow));
-        vow.permit(address(jar), 1);
-        jar.file(stringToBytes32("plate"), poolSize, start, end);
+//        jar = new Jar(address(vat), address(vow));
+//        vow.permit(address(jar), 1);
+//        jar.file(stringToBytes32("plate"), poolSize, start, end);
 
         emit PoolCreated(address(jar), poolSize, start, end);
         return address(jar);
     }
 
     function enterPool(uint256 amount) public {
-        vat.behalf(msg.sender, address(this));
-        jar.join(amount);
+//        vat.behalf(msg.sender, address(this));
+//        jar.join(amount);
 
         emit EnteredEarn(msg.sender, amount);
     }
 
     function cage() external onlyOwner {
-        jar.cage();
+//        jar.cage();
     }
 
     function rate() public view returns(uint256) {
-        uint256 currentPlate = jar.current();
-        (uint256 rate,,,,,) = jar.plates(currentPlate);
-        return rate;
+//        uint256 currentPlate = jar.current();
+//        (uint256 rate,,,,,) = jar.plates(currentPlate);
+//        return rate;
+        return 0;
     }
 
     function stringToBytes32(string memory source) public pure returns (bytes32 result) {

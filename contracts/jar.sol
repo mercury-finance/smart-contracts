@@ -77,7 +77,7 @@ contract Jar {
     // --- Events ---
     event Initialized(address indexed token, uint indexed duration, uint indexed exitDelay);
     event Replenished(uint reward);
-    event SpreadUpdated(address token, uint newDuration);
+    event SpreadUpdated(uint newDuration);
     event Join(address indexed user, uint indexed amount);
     event Exit(address indexed user, uint indexed amount);
     event Redeem(address indexed user, uint indexed amount);
@@ -154,11 +154,11 @@ contract Jar {
         UsbJoinLike(usbJoin).exit(address(this), wad);
         emit Replenished(wad);
     }
-    function setSpread(address _rewardsToken, uint _spread) external auth {
+    function setSpread(uint _spread) external auth {
         require(block.timestamp > endTime, "Jar/rewards-active");
         require(_spread > 0, "Jar/duration-non-zero");
         spread = _spread;
-        emit SpreadUpdated(_rewardsToken, spread);
+        emit SpreadUpdated(_spread);
     }
     function cage() external auth {
         live = 0;

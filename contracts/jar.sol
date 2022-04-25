@@ -124,7 +124,6 @@ contract Jar {
     }
     function earned(address account) public view returns (uint) {
         uint perToken = tokensPerShare() - tpsPaid[account];
-        // console.log(perToken);
         return ((balanceOf[account] * perToken) / 1e18) + rewards[account];
     }
     function getRewardForDuration() external view returns (uint) {
@@ -176,12 +175,12 @@ contract Jar {
         DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
         emit Join(msg.sender, wad);
     }
-    function exit() external update(msg.sender) {
+    function exit(uint256 wad) external update(msg.sender) {
         require(live == 1, "Jar/not-live");
         
-        totalSupply -= balanceOf[msg.sender];
-        rewards[msg.sender] += balanceOf[msg.sender];
-        balanceOf[msg.sender] = 0;
+        totalSupply -= wad;
+        rewards[msg.sender] += wad;
+        balanceOf[msg.sender] -= wad;
         unstakeTime[msg.sender] = block.timestamp + exitDelay;
 
         emit Exit(msg.sender, rewards[msg.sender]);

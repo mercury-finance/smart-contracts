@@ -79,6 +79,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     UsbGemLike public usbJoin;
     JugLike public jug;
     Rewards public helioRewards;
+    address public vow;
 
     struct CollateralType {
         GemLike gem;
@@ -129,6 +130,14 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     function setHelioRewards(address helioRewards_) public auth {
         helioRewards = Rewards(helioRewards_);
+    }
+
+    function setVow(address vow_) public auth {
+        vow = vow_;
+    }
+
+    function setJar(address jar_) public auth {
+
     }
 
     function setCollateralType(address token, address gemJoin, bytes32 ilk) external auth {

@@ -19,20 +19,28 @@
 
 pragma solidity ^0.8.10;
 
+interface DSTokenLike {
+    function transfer(address,uint) external;
+    function transferFrom(address,address,uint) external;
+}
+interface VatLike {
+    function move(address,address,uint256) external;
+    function hope(address) external;
+}
+interface UsbJoinLike {
+    function exit(address,uint) external;
+}
+
 /*
    "Put rewards in the jar and close it".
    This contract lets you deposit USBs from usb.sol and earn
    USB rewards. The USB rewards are deposited into this contract
-   and distributed over a timeline. Users can claim rewards anytime
-   but initial deposit follows the lock time.
+   and distributed over a timeline. Users can redeem rewards
+   after exit delay.
 */
 
-interface VatLike {
-    function move(address,address,uint256) external;
-}
-
 contract Jar {
-    // --- Auth ---
+     // --- Auth ---
     mapping (address => uint) public wards;
     function rely(address guy) external auth { wards[guy] = 1; }
     function deny(address guy) external auth { wards[guy] = 0; }
@@ -41,135 +49,154 @@ contract Jar {
         _;
     }
 
-    // --- Data ---
-    struct Plate {
-        uint rate;    // Food per second        [wad]
-        uint start;   // Start of distribution  [sec]
-        uint end;     // End of distribution    [sec]
-        uint check;   // Last reward time       [sec]
-        uint fps;     // Food Per Share         [ray]
-        uint Pile;    // Total join deposits    [wad]
-    }
-    struct Person {
-        uint pile;   // Join Deposit       [wad]
-        uint ate;    // Claimed Rewards    [wad]
-        uint spoon;  // Claimable Rewards  [wad]
-    }
+    // --- Derivative ---
+    string public name;
+    string public symbol;
+    uint public decimals = 18;
+    uint public totalSupply;
+    mapping(address => uint) public balanceOf;
 
-    mapping (uint => Plate) public plates;
-    mapping (uint => mapping (address => Person)) public people;
+    // --- Reward Data ---
+    uint public spread;      // Distribution time     [sec]
+    uint public endTime;     // Time "now" + spread   [sec]
+    uint public rate;        // Emission per second
+    uint public tps;         // USB tokens per share  
+    uint public lastUpdate;  // Last tps update       [sec]
+    uint public exitDelay;   // User unstake delay    [sec]
+    address public USB;      // The USB Stable Coin
 
-    uint public current;  // Plate eaten from
-    uint public Eaten;    // Total claimed rewards  [wad]
-    
-    VatLike public vat;  // CDP Engine
-    address public vow;  // Vow Surplus
+    mapping(address => uint) public tpsPaid;  //  USB per share paid
+    mapping(address => uint) public rewards;
+    mapping(address => uint) public unstakeTime;  // Time of Unstake
 
-    uint public live;  // Active Flag
+    address public vat;      // CDP Engine
+    address public vow;      // Vow Surplus
+    address public usbJoin;  // Usb Join
+    uint    public live;     // Active Flag
+
+    // --- Events ---
+    event Initialized(address indexed token, uint indexed duration, uint indexed exitDelay);
+    event Replenished(uint reward);
+    event SpreadUpdated(uint newDuration);
+    event Join(address indexed user, uint indexed amount);
+    event Exit(address indexed user, uint indexed amount);
+    event Redeem(address indexed user, uint indexed amount);
+    event Cage();
 
     // --- Init ---
-    constructor(address vat_, address vow_) {
+    constructor(string memory _name, string memory _symbol, address _vat, address _vow, address _usbJoin) {
         wards[msg.sender] = 1;
-        vat = VatLike(vat_);
-        vow = vow_;
         live = 1;
+        name = _name;
+        symbol = _symbol;
+        vat = _vat;
+        vow = _vow;
+        usbJoin = _usbJoin;
+        VatLike(vat).hope(usbJoin);
     }
 
     // --- Math ---
-    uint256 constant ONE = 10 ** 27;
-    
-    function _rmul(uint x, uint y) internal pure returns (uint z) {
-        unchecked {
-            z = _mul(x, y) / ONE;
-        }
+    function _min(uint a, uint b) internal pure returns (uint) {
+        return a < b ? a : b;
     }
-    function _add(uint x, uint y) internal pure returns (uint z) {
-        unchecked {
-            require((z = x + y) >= x);
+
+    // --- Mods ---
+    modifier update(address account) {
+        tps = tokensPerShare();
+        lastUpdate = lastTimeRewardApplicable();
+        if (account != address(0)) {
+            rewards[account] = earned(account);
+            tpsPaid[account] = tps;
         }
+        _;
     }
-    function _sub(uint x, uint y) internal pure returns (uint z) {
-        unchecked {
-            require((z = x - y) <= x);
-        }
+
+    // --- Views ---
+    function lastTimeRewardApplicable() public view returns (uint) {
+        return _min(block.timestamp, endTime);
     }
-    function _mul(uint x, uint y) internal pure returns (uint z) {
-        unchecked {
-            require(y == 0 || (z = x * y) / y == x);
+    function tokensPerShare() public view returns (uint) {
+        if (totalSupply == 0) {
+            return tps;
         }
+        uint last = lastTimeRewardApplicable();
+        return tps + (((last - lastUpdate) * rate * 1e18) / totalSupply);
+    }
+    function earned(address account) public view returns (uint) {
+        uint perToken = tokensPerShare() - tpsPaid[account];
+        // console.log(perToken);
+        return ((balanceOf[account] * perToken) / 1e18) + rewards[account];
+    }
+    function getRewardForDuration() external view returns (uint) {
+        return rate * spread;
     }
 
     // --- Administration ---
-    function file(bytes32 what, uint256 wad, uint256 start, uint256 end) external auth {
-        require(live == 1, "Jar/not-live");    
-        require(start < end, "Jar/wrong-interval");
-        if (what == "plate") {
-            current++;
-            Plate memory plate = plates[current];
-            plate.rate = wad / _sub(end, start);
-            plate.start = start;
-            plate.end = end; 
-            plate.check = start;
-            plates[current] = plate;
-        } else revert("Jar/file-unrecognized-param");
-        vat.move(vow, address(this), _mul(wad, ONE));
+    function initialize(address _usbToken, uint _spread, uint _exitDelay) public auth {
+        require(spread == 0);
+        USB = _usbToken;
+        spread = _spread;
+        exitDelay = _exitDelay;
+        emit Initialized(USB, spread, exitDelay);
+    }
+    function replenish(uint wad) external auth update(address(0)) {
+        if (block.timestamp >= endTime) {
+            rate = wad / spread;
+        } else {
+            uint remaining = endTime - block.timestamp;
+            uint leftover = remaining * rate;
+            rate = (wad + leftover) / spread;
+        }
+        lastUpdate = block.timestamp;
+        endTime = block.timestamp + spread;
+
+        VatLike(vat).move(vow, address(this), wad * 1e27);
+        UsbJoinLike(usbJoin).exit(address(this), wad);
+        emit Replenished(wad);
+    }
+    function setSpread(uint _spread) external auth {
+        require(block.timestamp > endTime, "Jar/rewards-active");
+        require(_spread > 0, "Jar/duration-non-zero");
+        spread = _spread;
+        emit SpreadUpdated(_spread);
     }
     function cage() external auth {
         live = 0;
+        emit Cage();
     }
 
-    // --- Usb Farming ---
-    function updatePlate(uint plate_) internal {
-        Plate storage plate = plates[plate_];
-        uint timestamp = block.timestamp;
-        if (timestamp >= plate.end) timestamp = plate.end;
-        if (timestamp <= plate.check) return;
-        if (plate.Pile <= 0) { plate.check = timestamp; return;}
+    // --- User ---
+    function join(uint256 wad) external update(msg.sender) {
+        require(live == 1, "Jar/not-live");
 
-        uint cookedFood = _mul(_sub(timestamp, plate.check), plate.rate); 
+        balanceOf[msg.sender] += wad;
+        totalSupply += wad;
+        unstakeTime[msg.sender] = 0;
 
-        plate.fps = _add(plate.fps, _mul(cookedFood, ONE) / plate.Pile);
-        plate.check = timestamp;
+        DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
+        emit Join(msg.sender, wad);
     }
-    function join(uint wad) external {
-        // system is live
-        require(live == 1, "Jar/not-live");    
+    function exit() external update(msg.sender) {
+        require(live == 1, "Jar/not-live");
+        
+        totalSupply -= balanceOf[msg.sender];
+        rewards[msg.sender] += balanceOf[msg.sender];
+        balanceOf[msg.sender] = 0;
+        unstakeTime[msg.sender] = block.timestamp + exitDelay;
 
-        Plate storage plate = plates[current];
-        Person storage person = people[current][msg.sender];
-
-        updatePlate(current);
-        uint spoon = _sub(_rmul(person.pile, plate.fps), person.ate);
-        person.spoon = _add(person.spoon, spoon);
-
-        plate.Pile = _add(plate.Pile, wad);
-        person.pile = _add(person.pile, wad);
-        person.ate = _rmul(person.pile, plate.fps);
-
-        vat.move(msg.sender, address(this), _mul(wad, ONE));
+        emit Exit(msg.sender, rewards[msg.sender]);
     }
-    function exit(uint plate_, uint wad) external {
-        // system is live
-        require(live == 1, "Jar/not-live");    
+    function redeem() external {
+        require(live == 1, "Jar/not-live");
+        require(unstakeTime[msg.sender] != 0, "Jar/not-unstaked");
+        require(block.timestamp >= unstakeTime[msg.sender], "Jar/time-not-reached");
 
-        Plate storage plate = plates[plate_];
-        Person storage person = people[plate_][msg.sender];
+        uint _rewards = rewards[msg.sender];
+        if (_rewards > 0) {
+            rewards[msg.sender] = 0;
+            DSTokenLike(USB).transfer(msg.sender, _rewards);
+        }
 
-        // respect withdraw lock period
-        if (wad != 0) require(block.timestamp >= plate.end, "Jar/plate-not-ended");
-        require(person.pile >= wad, "Jar/insufficient-balance");
-
-        updatePlate(plate_);
-        uint spoon = _sub(_rmul(person.pile, plate.fps), person.ate);
-        spoon = _add(person.spoon, spoon);
-        Eaten = _add(Eaten, spoon);
-        delete person.spoon;
-        vat.move(address(this), msg.sender, _mul(spoon, ONE));
-
-        plate.Pile = _sub(plate.Pile, wad);
-        person.pile = _sub(person.pile, wad);
-        person.ate = _rmul(person.pile, plate.fps);
-
-        vat.move(address(this), msg.sender, _mul(wad, ONE));
+        emit Redeem(msg.sender, _rewards);
     }
 }

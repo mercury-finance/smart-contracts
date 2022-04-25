@@ -44,15 +44,6 @@ Unlock and transfer funds to the user
 * `estimatedLiquidationPrice(<token>, <user_address>, <amount>)` - Price of aBNBc when user will be liquidated with additional amount of aBNBc deposited/withdraw
 * `borrowApr(<token>)` - Percent value, yearly APY with 6 decimals
 
-
-## REWARDS
-
-### Reward balance
-`pendingRewards(<user_address>)` - Maximum amount of tokens that can be claimed by user.
-
-### Claim
-`claim(<user_address>, <amount>)` - Claim `amount` of user tokens and transfer them to the `user` wallet
-
 ## ABIs
 [INTERACTION ABI](interfaces/DAOInteraction.json)
 
@@ -70,3 +61,18 @@ Unlock and transfer funds to the user
 https://ethereum.stackexchange.com/a/23110
 
 `web3.utils.hexToAscii(val)`
+
+## REWARDS
+
+### Reward balance
+`pendingRewards(<user_address>)` - Maximum amount of tokens that can be claimed by user.
+
+### Claim
+`claim(<user_address>, <amount>)` - Claim `amount` of user tokens and transfer them to the `user` wallet
+
+### ABI
+[HelioRewards ABI](interfaces/HelioRewards.json)
+
+## Addresses
+* "HelioToken": [0x5ba8cC27d398C405Fac73Af60c6F469158B06De9](https://testnet.bscscan.com/address/0x5ba8cC27d398C405Fac73Af60c6F469158B06De9),
+* "HelioRewards": [0x2D9d6BeC01Cb2Ef88793763514018893749c78Aa](https://testnet.bscscan.com/address/0x2D9d6BeC01Cb2Ef88793763514018893749c78Aa),

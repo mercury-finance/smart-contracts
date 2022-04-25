@@ -62,7 +62,7 @@ contract HelioRewards {
 
     constructor() {
         live = 1;
-        wards[msg.sender] == 1;
+        wards[msg.sender] = 1;
     }
 
     function stop() public auth {

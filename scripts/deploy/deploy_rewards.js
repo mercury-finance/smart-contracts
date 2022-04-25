@@ -10,6 +10,8 @@ const { VAT,
     JUG,
     REAL_ABNBC,
     REALaBNBcJoin,
+    REWARDS,
+    HELIO_TOKEN, INTERACTION
 } = require('../../addresses.json');
 const {ethers} = require("hardhat");
 
@@ -40,14 +42,10 @@ async function main() {
     });
 
     console.log('Adding rewards pool');
+    // rewards = this.HelioRewards.attach(REWARDS);
     let collateral = ethers.utils.formatBytes32String("aBNBc");
     await rewards.initPool(collateral);
     await rewards.setHelioToken(helioToken.address);
-
-    // let collateral2 = ethers.utils.formatBytes32String("aBNBc2");
-
-    // await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral);
-    // await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
 
     console.log('Finished');
 }

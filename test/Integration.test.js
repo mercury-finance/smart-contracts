@@ -224,6 +224,8 @@ describe('===MVP1===', function () {
         // Normalized dart [wad] = amount in USB / ilk.rate
         let debt_rate = await (await vat.ilks(collateral)).rate;
         let usb_amount1 = (550000000000000000000 / debt_rate) * ONE;
+        console.log("HERE")
+        console.log(usb_amount1);
         let usb_amount2 = (600000000000000000000 / debt_rate) * ONE;
 
         await vat.connect(signer1).frob(collateral, signer1.address, signer1.address, signer1.address, 0, usb_amount1.toString()); // 550 USBs

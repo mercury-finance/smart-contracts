@@ -13,7 +13,8 @@ describe('===Jar===', function () {
 
     let vat, 
         spot, 
-        abnbc, 
+        abnbc,
+        husb, 
         gemJoin, 
         jug,
         vow,
@@ -58,7 +59,13 @@ describe('===Jar===', function () {
         await abnbc.deployed(); // Collateral
         gemJoin = await this.GemJoin.connect(deployer).deploy(vat.address, collateral, abnbc.address);
         await gemJoin.deployed();
-        
+
+        // Usb module
+        usb = await this.Usb.connect(deployer).deploy(97);
+        await usb.deployed(); // Stable Coin
+        usbJoin = await this.UsbJoin.connect(deployer).deploy(vat.address, usb.address);
+        await usbJoin.deployed();
+
         // Rates module
         jug = await this.Jug.connect(deployer).deploy(vat.address);
         await jug.deployed();
@@ -68,7 +75,7 @@ describe('===Jar===', function () {
         await vow.deployed();
 
         // Jar module 
-        jar = await this.Jar.connect(deployer).deploy(vat.address, vow.address);
+        jar = await this.Jar.connect(deployer).deploy("Helio USB", "hUSB", vat.address, vow.address, usbJoin.address);
         await jar.deployed();
 
         // Oracle module
@@ -98,6 +105,9 @@ describe('===Jar===', function () {
         await spot.connect(deployer).poke(collateral);
 
         // Initialize Collateral Module [User should approve gemJoin while joining]
+
+        // Initialize Usb Module
+        await usb.connect(deployer).rely(usbJoin.address);
 
         // Initialize Rates Module
         await jug.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("base"), "1000000000315529215730000000"); // 1% Yearly
@@ -162,35 +172,8 @@ describe('===Jar===', function () {
         await network.provider.send("evm_setAutomine", [true]);
     });
 
-    describe('---file', function () {
-        it('reverts Jar/not-live', async function () {
-            await jar.connect(deployer).cage();
-            let time = (await ethers.provider.getBlock()).timestamp;
-            await expect(jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), time + 5, time + 30)).to.be.revertedWith("Jar/not-live");
-        });
-        it('reverts Jar/wrong-interval', async function () {
-            let time = (await ethers.provider.getBlock()).timestamp;
-            await expect(jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), time + 50, time + 4)).to.be.revertedWith("Jar/wrong-interval");
-        });
-        it('reverts Jar/file-unrecognized-param', async function () {
-            let time = (await ethers.provider.getBlock()).timestamp;
-            await expect(jar.connect(deployer).file(ethers.utils.formatBytes32String("asdf"), ethers.utils.parseEther("200"), time + 5, time + 40)).to.be.revertedWith("Jar/file-unrecognized-param");
-        });
-        it('should create new plate via file', async function () {
-            let time = (await ethers.provider.getBlock()).timestamp;
-            await vow.connect(deployer).permit(jar.address, 1);
-            await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), time + 5, time + 40);
-        });
-    })
-
     describe('---join ---exit', function () {
-        it('reverts join Jar/not-live', async function () {
-            await jar.connect(deployer).cage();
-            let time = (await ethers.provider.getBlock()).timestamp;
-            await expect(jar.connect(deployer).join("100" + wad)).to.be.revertedWith("Jar/not-live");
-        });
-
-        it('Case 1: Before "check", join-claim-exit', async function () {
+        it('Case', async function () {
 
             await network.provider.send("evm_setAutomine", [false]);
             let tau;
@@ -207,241 +190,87 @@ describe('===Jar===', function () {
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
 
                 await vow.connect(deployer).permit(jar.address, 1);
-                await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), tau + 50, tau + 100); // 4 USB per second
+                await jar.connect(deployer).initialize(usb.address, "10", "10");
+                await jar.connect(deployer).replenish("10" + wad);
 
-                await network.provider.send("evm_mine"); // 49 sec to start
+                // await network.provider.send("evm_mine"); // 10 seconds to start
 
-                expect(await vat.usb(jar.address)).to.equal("200" + rad);
-                expect((await jar.plates(1)).end - (await jar.plates(1)).start).to.equal(50);
-                expect((await jar.plates(1)).rate).to.equal("4" + wad);
+                // expect(await usb.balanceOf(jar.address)).to.equal("10" + wad);
+                // expect(await jar.spread()).to.equal("10");
+                // expect(await jar.exitDelay()).to.equal("10");
 
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
+                // tau = (await ethers.provider.getBlock()).timestamp;
+                // await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
 
-                await vat.connect(signer1).hope(jar.address);
-                await jar.connect(signer1).join("10" + wad);
+                vat.connect(signer1).hope(usbJoin.address);
+                await usbJoin.connect(signer1).exit(signer1.address, "50" + wad);
+                await usb.connect(signer1).approve(jar.address, "50" + wad);
+                await jar.connect(signer1).join("50" + wad);
 
-                await network.provider.send("evm_mine"); // 48 sec to start
+                await network.provider.send("evm_mine"); // 0 seconds
 
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
+                // tau = (await ethers.provider.getBlock()).timestamp;
+                // await network.provider.send("evm_setNextBlockTimestamp", [tau + 10]);
 
-                await vat.connect(signer2).hope(jar.address);
-                await jar.connect(signer2).join("5" + wad);
+                // await network.provider.send("evm_mine"); // 0 seconds past start
 
-                await network.provider.send("evm_mine"); // 47 sec to start
-
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-
-                await vat.connect(signer3).hope(jar.address);
-                await jar.connect(signer3).join("5" + wad);
-
-                await network.provider.send("evm_mine"); // 46 sec to start
-
-                expect((await jar.people(1, signer1.address)).pile).to.equal("10" + wad);
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
-                expect((await jar.plates(1)).Pile).to.equal("20" + wad);
-                expect((await jar.plates(1)).fps).to.equal("0");
-
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-
-                await jar.connect(signer1).exit(1, "5" + wad); // Can not exit cuz end hasn't reached
-                await jar.connect(signer2).exit(1, "0" + wad);
-                await jar.connect(signer3).exit(1, "5" + wad); // Can not exit cuz end hasn't reached
-
-                await network.provider.send("evm_mine"); // 45 sec to start
-
-                expect((await jar.people(1, signer1.address)).pile).to.equal("10" + wad);
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
-                expect((await jar.plates(1)).Pile).to.equal("20" + wad);
-                expect((await jar.plates(1)).fps).to.equal("0");
-                
-                // console.log((await jar.plates(1)).start - (await ethers.provider.getBlock()).timestamp);
-                await network.provider.send("evm_setAutomine", [true]);
-            }
-        });
-
-        it('Case 2: After "check", join-claim', async function () {
-
-            await network.provider.send("evm_setAutomine", [false]);
-            let tau;
-
-            {
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-                await network.provider.send("evm_mine");
-                // console.log((await ethers.provider.getBlock()).timestamp)
-            }
-
-            {
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-
-                await vow.connect(deployer).permit(jar.address, 1);
-                await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), tau + 1, tau + 51); // 4 USB per second
-
-                await network.provider.send("evm_mine"); // Started 0 sec
-
-                expect(await vat.usb(jar.address)).to.equal("200" + rad);
-                expect((await jar.plates(1)).end - (await jar.plates(1)).start).to.equal(50);
-                expect((await jar.plates(1)).rate).to.equal("4" + wad);
-
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-                
-                await vat.connect(signer1).hope(jar.address);
-                await jar.connect(signer1).join("10" + wad);
-                
-                await network.provider.send("evm_mine"); // Started 1 sec
-
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-
-                await vat.connect(signer2).hope(jar.address);
-                await jar.connect(signer2).join("5" + wad);
-
-                await network.provider.send("evm_mine"); // Started 2 sec
-
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-
-                await vat.connect(signer3).hope(jar.address);
-                await jar.connect(signer3).join("5" + wad);
-
-                await network.provider.send("evm_mine"); // Started 3 sec
-
-                expect((await jar.people(1, signer1.address)).pile).to.equal("10" + wad);
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
-                expect((await jar.plates(1)).Pile).to.equal("20" + wad);
-                expect((await jar.plates(1)).fps).to.equal("666666666666666666666666666");
-                expect(await jar.Eaten()).to.equal("0");
+                // expect(await jar.rewards(signer1.address)).to.equal("0");
 
                 tau = (await ethers.provider.getBlock()).timestamp;
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 5]);
 
-                await jar.connect(signer3).exit(1, "0" + wad);
+                // await jar.connect(signer1).exit();
+                vat.connect(signer2).hope(usbJoin.address);
+                await usbJoin.connect(signer2).exit(signer2.address, "100" + wad);
+                await usb.connect(signer2).approve(jar.address, "100" + wad);
+                await jar.connect(signer2).join("100" + wad);
 
-                await network.provider.send("evm_mine"); // Started 8 sec
+                await network.provider.send("evm_mine"); // 5 seconds
 
-                expect((await jar.people(1, signer1.address)).pile).to.equal("10" + wad);
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
-                expect((await jar.plates(1)).Pile).to.equal("20" + wad);
-                expect(await jar.Eaten()).to.equal("5000000000000000000"); // Signer3 '5' claimed
-
-                // console.log((await jar.plates(1)).start - (await ethers.provider.getBlock()).timestamp);
-
-                await network.provider.send("evm_setAutomine", [true]);
-            }
-        });
-
-        it('Case 3: After "end", join-claim-exit', async function () {
-
-            await network.provider.send("evm_setAutomine", [false]);
-            let tau;
-
-            {
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-                await network.provider.send("evm_mine");
-                // console.log((await ethers.provider.getBlock()).timestamp)
-            }
-
-            {
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-
-                await vow.connect(deployer).permit(jar.address, 1);
-                await jar.connect(deployer).file(ethers.utils.formatBytes32String("plate"), ethers.utils.parseEther("200"), tau + 1, tau + 51); // 4 USB per second
-
-                await network.provider.send("evm_mine"); // Started 0 sec
-
-                expect(await vat.usb(jar.address)).to.equal("200" + rad);
-                expect((await jar.plates(1)).end - (await jar.plates(1)).start).to.equal(50);
-                expect((await jar.plates(1)).rate).to.equal("4" + wad);
+                // expect(await jar.rewards(signer1.address)).to.equal("55000000000000000000");
 
                 tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-                
-                await vat.connect(signer1).hope(jar.address);
-                await jar.connect(signer1).join("10" + wad);
-                
-                await network.provider.send("evm_mine"); // Started 1 sec
+                await network.provider.send("evm_setNextBlockTimestamp", [tau + 15]);
+                                
+                await jar.connect(deployer).replenish("10" + wad);
+
+                // await jar.connect(signer1).exit();
+
+                // await jar.connect(signer2).exit();
+
+                await network.provider.send("evm_mine"); // 0 seconds
 
                 tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
+                await network.provider.send("evm_setNextBlockTimestamp", [tau + 15]);
+                                
+                await jar.connect(deployer).replenish("10" + wad);
 
-                await vat.connect(signer2).hope(jar.address);
-                await jar.connect(signer2).join("5" + wad);
+                await jar.connect(signer1).exit();
 
-                await network.provider.send("evm_mine"); // Started 2 sec
+                await jar.connect(signer2).exit();
 
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
+                await network.provider.send("evm_mine"); // 15 seconds
 
-                await vat.connect(signer3).hope(jar.address);
-                await jar.connect(signer3).join("5" + wad);
+                expect(await jar.rewards(signer1.address)).to.equal("59999999999999999950");
+                expect(await jar.rewards(signer2.address)).to.equal("109999999999999999900");
 
-                await network.provider.send("evm_mine"); // Started 3 sec
 
-                expect((await jar.people(1, signer1.address)).pile).to.equal("10" + wad);
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
-                expect((await jar.plates(1)).Pile).to.equal("20" + wad);
-                expect((await jar.plates(1)).fps).to.equal("666666666666666666666666666");
-                expect(await jar.Eaten()).to.equal("0");
+                // vat.connect(signer2).hope(usbJoin.address);
+                // await usbJoin.connect(signer2).exit(signer2.address, "100" + wad);
+                // await usb.connect(signer2).approve(jar.address, "100" + wad);
+                // await jar.connect(signer2).join("100" + wad);
 
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 47]);
+                    // await network.provider.send("evm_mine"); // 5 seconds past start
 
-                await jar.connect(signer1).join("10" + wad);
-                await jar.connect(signer2).join("0" + wad);
-                await jar.connect(signer3).join("0" + wad);
+                    // tau = (await ethers.provider.getBlock()).timestamp;
+                    // await network.provider.send("evm_setNextBlockTimestamp", [tau + 5]);
 
-                await network.provider.send("evm_mine"); // Started 50 sec
+                    // await jar.connect(signer1).exit();
 
-                expect((await jar.people(1, signer1.address)).pile).to.equal("20" + wad);
-                expect((await jar.people(1, signer1.address)).spoon).to.equal("100666666666666666666");
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer2.address)).spoon).to.equal("48333333333333333333");
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).spoon).to.equal("47000000000000000000");
-                expect((await jar.plates(1)).Pile).to.equal("30" + wad);
-                expect(await jar.Eaten()).to.equal("0");
+                    // await network.provider.send("evm_mine"); // 10 seconds past start
 
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
-
-                await jar.connect(signer1).exit(1, "0" + wad);
-                await jar.connect(signer2).exit(1, "0" + wad);
-                await jar.connect(signer3).exit(1, "0" + wad);
-
-                await network.provider.send("evm_mine"); // Started 51 sec
-
-                expect((await jar.people(1, signer1.address)).pile).to.equal("20" + wad);
-                expect((await jar.people(1, signer1.address)).spoon).to.equal("0");
-                expect((await jar.people(1, signer2.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer2.address)).spoon).to.equal("0");
-                expect((await jar.people(1, signer3.address)).pile).to.equal("5" + wad);
-                expect((await jar.people(1, signer3.address)).spoon).to.equal("0");
-                expect((await jar.plates(1)).Pile).to.equal("30" + wad);
-                expect(await jar.Eaten()).to.equal("195999999999999999999");
-
-                // console.log((await jar.plates(1)).start - (await ethers.provider.getBlock()).timestamp);
-
-                await network.provider.send("evm_setAutomine", [true]);
+                    // expect(await jar.rewards(signer1.address)).to.equal("65333333333333333300");
             }
         });
     })
 });
-
-// async function mine(jump) {
-//     tau = (await ethers.provider.getBlock()).timestamp;
-//     await network.provider.send("evm_setNextBlockTimestamp", [tau + jump]);
-//     await network.provider.send("evm_mine");
-// }

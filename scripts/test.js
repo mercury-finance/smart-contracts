@@ -11,8 +11,7 @@ const { VAT,
     JUG,
     Oracle,
     VOW,
-    INTERACTION, REAL_ABNBC
-} = require('../../addresses.json');
+    INTERACTION} = require('../addresses.json');
 const {ethers} = require("hardhat");
 
 async function main() {
@@ -42,7 +41,10 @@ async function main() {
 
     // console.log("Vat...");
 
-    // let vat = this.Vat.attach(VAT);
+    let vat = this.Vat.attach(VAT);
+    let ilk = await vat.ilks(collateral);
+    const {0: Art, 1: rate, 2: spot, 3: line, 4: dust} = ilk;
+    console.log("Vat rate is: " + rate);
     // await vat.init(collateral);
     // await vat.rely(aBNBcJoin);
     // await vat.rely(INTERACTION);
@@ -61,23 +63,17 @@ async function main() {
     // await spot["file(bytes32,uint256)"](ethers.utils.formatBytes32String("par"), "1" + ray); // It means pegged to 1$
     // await spot.poke(collateral2);
 
-    // let jug = this.Jug.attach(JUG);
+    let jug = this.Jug.attach(JUG);
+    let res = await jug.ilks(collateral);
+    const {0: duty, 1: rho,} = res;
+    console.log("Duty is: " + duty + ", rho is: " + rho);
+    let base = await jug.base();
+    console.log("Base: " + base);
     // await jug["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), VOW);
 
     // console.log("Usb...");
     // let usb = this.Usb.attach(USB);
     // await usb.rely(UsbJoin);
-
-    let interaction = this.Interaction.attach(INTERACTION);
-    // await interaction.setCores(
-    //     VAT,
-    //     SPOT,
-    //     UsbJoin,
-    //     JUG
-    // )
-
-    await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral);
-    await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
 
     console.log('Finished');
 }

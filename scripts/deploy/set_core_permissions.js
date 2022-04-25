@@ -11,6 +11,7 @@ const { VAT,
     Oracle,
     REALOracle,
     JUG,
+    INTERACTION,
 } = require('../../addresses.json');
 const {ethers} = require("hardhat");
 const {BN} = require("@openzeppelin/test-helpers");
@@ -36,10 +37,10 @@ async function main() {
 
     console.log("Setting permissions");
 
-    let oracle = this.Oracle.attach(Oracle);
-    let oracle2 = this.Oracle.attach(REALOracle);
-    await oracle.setPrice("400" + wad); // 2$, mat = 80%, 2$ * 80% = 1.6$ With Safety Margin
-    await oracle2.setPrice("300" + wad); // 400$, mat = 80%, 400$ * 80% = 320$ With Safety Margin
+    // let oracle = this.Oracle.attach(Oracle);
+    // let oracle2 = this.Oracle.attach(REALOracle);
+    // await oracle.setPrice("400" + wad); // 2$, mat = 80%, 2$ * 80% = 1.6$ With Safety Margin
+    // await oracle2.setPrice("300" + wad); // 400$, mat = 80%, 400$ * 80% = 320$ With Safety Margin
 
     console.log("Vat...");
 
@@ -49,18 +50,20 @@ async function main() {
     await vat.rely(UsbJoin);
     await vat.rely(JUG);
 
-    await vat["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "500000" + rad);
-    await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "50000" + rad);
+    await vat.rely(INTERACTION);
+
+    await vat["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "500000000" + rad);
+    await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "50000000" + rad);
     await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "1" + rad);
-    await vat["file(bytes32,bytes32,uint256)"](collateral2, ethers.utils.formatBytes32String("line"), "50000" + rad);
+    await vat["file(bytes32,bytes32,uint256)"](collateral2, ethers.utils.formatBytes32String("line"), "50000000" + rad);
     await vat["file(bytes32,bytes32,uint256)"](collateral2, ethers.utils.formatBytes32String("dust"), "1" + rad);
 
     console.log("Spot...");
     let spot = this.Spot.attach(SPOT);
-    await spot["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("pip"), oracle.address);
+    await spot["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("pip"), Oracle);
     await spot["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("mat"), "1250000000000000000000000000"); // Liquidation Ratio
 
-    await spot["file(bytes32,bytes32,address)"](collateral2, ethers.utils.formatBytes32String("pip"), oracle2.address);
+    await spot["file(bytes32,bytes32,address)"](collateral2, ethers.utils.formatBytes32String("pip"), REALOracle);
     await spot["file(bytes32,bytes32,uint256)"](collateral2, ethers.utils.formatBytes32String("mat"), "1250000000000000000000000000"); // Liquidation Ratio
 
     await spot["file(bytes32,uint256)"](ethers.utils.formatBytes32String("par"), "1" + ray); // It means pegged to 1$

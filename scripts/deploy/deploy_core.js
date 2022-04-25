@@ -31,23 +31,19 @@ async function main() {
     await spot.deployed();
     console.log("Spot deployed to:", spot.address);
 
-    const abnbc = await this.ABNBC.deploy();
-    await abnbc.deployed();
-    console.log("aBNBc deployed to:", abnbc.address);
+    // const abnbc = await this.ABNBC.deploy();
+    // await abnbc.deployed();
+    // console.log("aBNBc deployed to:", abnbc.address);
+    //
+    // const usb = await this.Usb.deploy(97);
+    // await usb.deployed();
+    // console.log("Usb deployed to:", usb.address);
 
-    // const abnbc2 = await this.ABNBC.deploy("Native aBNBc", "FAKEaBNBc");
-    // await abnbc2.deployed();
-    // console.log("aBNBc2 deployed to:", abnbc2.address);
-
-    const usb = await this.Usb.deploy(97);
-    await usb.deployed();
-    console.log("Usb deployed to:", usb.address);
-
-    const usbJoin = await this.UsbJoin.deploy(vat.address, usb.address);
+    const usbJoin = await this.UsbJoin.deploy(vat.address, USB);
     await usbJoin.deployed();
     console.log("usbJoin deployed to:", usbJoin.address);
     //
-    const abnbcJoin = await this.GemJoin.deploy(vat.address, collateral, abnbc.address);
+    const abnbcJoin = await this.GemJoin.deploy(vat.address, collateral, aBNBc);
     await abnbcJoin.deployed();
     console.log("abnbcJoin deployed to:", abnbcJoin.address);
 
@@ -55,12 +51,12 @@ async function main() {
     await abnbcJoin2.deployed();
     console.log("abnbcJoin2 deployed to:", abnbcJoin2.address);
 
-    const oracle = await this.Oracle.deploy();
-    await oracle.deployed();
-    console.log("Oracle deployed to:", oracle.address);
-    const oracle2 = await this.Oracle.deploy();
-    await oracle2.deployed();
-    console.log("Oracle2 deployed to:", oracle2.address);
+    // const oracle = await this.Oracle.deploy();
+    // await oracle.deployed();
+    // console.log("Oracle deployed to:", oracle.address);
+    // const oracle2 = await this.Oracle.deploy();
+    // await oracle2.deployed();
+    // console.log("Oracle2 deployed to:", oracle2.address);
 
     jug = await this.Jug.deploy(vat.address);
     await jug.deployed();
@@ -71,23 +67,23 @@ async function main() {
         address: vat.address
     });
 
-    await hre.run("verify:verify", {
-        address: usb.address,
-        constructorArguments: [
-            97
-        ],
-    });
+    // await hre.run("verify:verify", {
+    //     address: usb.address,
+    //     constructorArguments: [
+    //         97
+    //     ],
+    // });
+    //
+    // await hre.run("verify:verify", {
+    //     address: abnbc.address,
+    // });
 
-    await hre.run("verify:verify", {
-        address: abnbc.address,
-    });
-
-    await hre.run("verify:verify", {
-        address: oracle.address,
-    });
-    await hre.run("verify:verify", {
-        address: oracle2.address,
-    });
+    // await hre.run("verify:verify", {
+    //     address: oracle.address,
+    // });
+    // await hre.run("verify:verify", {
+    //     address: oracle2.address,
+    // });
 
     await hre.run("verify:verify", {
         address: spot.address,
@@ -100,7 +96,7 @@ async function main() {
         address: usbJoin.address,
         constructorArguments: [
             vat.address,
-            usb.address
+            USB
         ],
     });
     await hre.run("verify:verify", {
@@ -108,7 +104,7 @@ async function main() {
         constructorArguments: [
             vat.address,
             collateral,
-            abnbc.address
+            aBNBc
         ],
     });
     await hre.run("verify:verify", {

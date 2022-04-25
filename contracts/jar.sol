@@ -19,8 +19,6 @@
 
 pragma solidity ^0.8.10;
 
-import "hardhat/console.sol";
-
 interface DSTokenLike {
     function transfer(address,uint) external;
     function transferFrom(address,address,uint) external;
@@ -122,12 +120,6 @@ contract Jar {
             return tps;
         }
         uint last = lastTimeRewardApplicable();
-        uint test = tps + (((last - lastUpdate) * rate * 1e18) / totalSupply);
-        console.log(test);
-        console.log(last);
-        console.log(lastUpdate);
-        console.log(totalSupply);
-
         return tps + (((last - lastUpdate) * rate * 1e18) / totalSupply);
     }
     function earned(address account) public view returns (uint) {

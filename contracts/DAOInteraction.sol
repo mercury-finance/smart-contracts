@@ -136,10 +136,6 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         vow = vow_;
     }
 
-    function setJar(address jar_) public auth {
-
-    }
-
     function setCollateralType(address token, address gemJoin, bytes32 ilk) external auth {
         collaterals[token] = CollateralType(GemLike(gemJoin), ilk, 1);
         IERC20(token).approve(gemJoin,
@@ -240,6 +236,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         jug.drip(collateralType.ilk);
+        helioRewards.drip(collateralType.ilk);
     }
 
     //    /////////////////////////////////

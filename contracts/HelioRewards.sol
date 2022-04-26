@@ -17,7 +17,7 @@ interface VatLike {
     function fold(bytes32,address,int) external;
 }
 
-interface Oracle {
+interface MCDOracle {
     function peek() external view returns (bytes32, bool);
 }
 
@@ -35,6 +35,7 @@ contract HelioRewards {
         _;
     }
 
+    uint256 constant RAD = 10 ** 18; // ray
     uint256 constant ONE = 10 ** 27; // ray
     uint256 public live;  // Active Flag
 
@@ -60,17 +61,18 @@ contract HelioRewards {
     bytes32 poolIlk;
     uint256 rewardsPool;
 
-    constructor() {
+    constructor(address vat_) {
         live = 1;
         wards[msg.sender] = 1;
+        vat = VatLike(vat_);
     }
 
     function stop() public auth {
         live = 0;
     }
 
-    function initPool(bytes32 ilk) external auth {
-        ilks[ilk] = Ilk(0, block.timestamp);
+    function initPool(bytes32 ilk, uint256 rate) external auth {
+        ilks[ilk] = Ilk(rate, block.timestamp);
         poolIlk = ilk;
     }
 
@@ -78,13 +80,26 @@ contract HelioRewards {
         helioToken = helioToken_;
     }
 
+    function setRate(bytes32 ilk, uint256 newRate) external auth {
+        Ilk storage pool = ilks[ilk];
+        pool.rewardRate = newRate;
+    }
+
     function helioPrice() public view returns(uint256) {
         return 100000000000000000; //FIXME: HARDCODED 10 cents
     }
 
-    // FIXME FRO DEBUG
+    // FIXME FOR DEBUG
     function addRewards(address usr, uint256 amount) external poolInit auth {
         unclaimedRewards[usr] += amount;
+    }
+
+    function rate() public view returns(uint256) {
+        return ilks[poolIlk].rewardRate;
+    }
+
+    function distributionApy() public view returns(uint256) {
+        return (hMath.rpow(ilks[poolIlk].rewardRate, 31536000, ONE) - ONE) / 10 ** 7;
     }
 
     function pendingRewards(address usr) public poolInit view returns(uint256) {
@@ -102,24 +117,24 @@ contract HelioRewards {
         unclaimedRewards[usr] += shares;
     }
 
-    function claim(address usr, uint256 amount) external poolInit auth {
-        require(amount <= pendingRewards(usr), "Rewards/not-enough-rewards");
-        if (unclaimedRewards[usr] >= amount) {
-            unclaimedRewards[usr] -= amount;
+    function claim(uint256 amount) external poolInit {
+        require(amount <= pendingRewards(msg.sender), "Rewards/not-enough-rewards");
+        if (unclaimedRewards[msg.sender] >= amount) {
+            unclaimedRewards[msg.sender] -= amount;
         } else {
-            uint256 diff = amount - unclaimedRewards[usr];
-            claimedRewards[usr] = diff;
-            unclaimedRewards[usr] = 0;
+            uint256 diff = amount - unclaimedRewards[msg.sender];
+            claimedRewards[msg.sender] = diff;
+            unclaimedRewards[msg.sender] = 0;
         }
-        Mintable(helioToken).mint(usr, amount);
+        Mintable(helioToken).mint(msg.sender, amount);
 
-        emit Claimed(usr, amount);
+        emit Claimed(msg.sender, amount);
     }
 
     // Rewards pool update
     function drip(bytes32 ilk) external poolInit {
         require(block.timestamp >= ilks[ilk].rho, "Reward/invalid-now");
-        uint256 rate = hMath._rpow(ilks[ilk].rewardRate, block.timestamp - ilks[ilk].rho, ONE);
+        uint256 rate = hMath.rpow(ilks[ilk].rewardRate, block.timestamp - ilks[ilk].rho, ONE);
         ilks[ilk].rho = block.timestamp;
 
         (uint256 totalDebt,) = vat.ilks(poolIlk);

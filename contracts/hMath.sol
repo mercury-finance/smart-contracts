@@ -40,7 +40,7 @@ library hMath {
     }
     }
 
-    function _rpow(uint x, uint n, uint b) internal pure returns (uint z) {
+    function rpow(uint x, uint n, uint b) internal pure returns (uint z) {
         assembly {
             switch x case 0 {switch n case 0 {z := b} default {z := 0}}
             default {

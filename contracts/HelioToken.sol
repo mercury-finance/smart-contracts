@@ -11,22 +11,22 @@ contract HelioToken is ERC20 {
 
     bool public  stopped;
 
-    address public helioRewards;
-    address public owner;
+    // --- Auth ---
+    mapping (address => uint) public wards;
+    function rely(address usr) external auth { wards[usr] = 1; }
+    function deny(address usr) external auth { wards[usr] = 0; }
+    modifier auth {
+        require(wards[msg.sender] == 1, "HelioToken/not-authorized");
+        _;
+    }
 
     modifier stoppable {
         require(!stopped, "helio-is-stopped");
         _;
     }
 
-    modifier auth {
-        require(msg.sender == helioRewards || msg.sender == owner, "Forbidden");
-        _;
-    }
-
-    constructor(address helioRewards_) ERC20("Helio Reward token", "HELIO"){
-        helioRewards = helioRewards_;
-        owner = msg.sender;
+    constructor() ERC20("Helio Reward token", "HELIO"){
+        wards[msg.sender] = 1;
     }
 
     function mint(address _to, uint256 _amount) external auth stoppable returns(bool) {

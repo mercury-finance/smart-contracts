@@ -11,7 +11,7 @@ const Interaction = artifacts.require('DAOInteraction');
 //The test will be updated on daily basis//
 ///////////////////////////////////////////
 
-describe('===INTERACTION2-Multicollateral===', function () {
+xdescribe('===INTERACTION2-Multicollateral===', function () {
     let deployer, signer1, signer2, mockVow;
 
     let vat,
@@ -57,6 +57,9 @@ describe('===INTERACTION2-Multicollateral===', function () {
         // Core module
         vat = await this.Vat.connect(deployer).deploy();
         await vat.deployed();
+
+        console.log(vat);
+
         spot = await this.Spot.connect(deployer).deploy(vat.address);
         await spot.deployed();
 

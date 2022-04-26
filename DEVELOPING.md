@@ -64,15 +64,18 @@ https://ethereum.stackexchange.com/a/23110
 
 ## REWARDS
 
-### Reward balance
+### View Reward balance
 `pendingRewards(<user_address>)` - Maximum amount of tokens that can be claimed by user.
 
 ### Claim
 `claim(<user_address>, <amount>)` - Claim `amount` of user tokens and transfer them to the `user` wallet
 
+### View distribution APY
+`distributionApy()` - rate in percent (like borrowApr)
+
 ### ABI
 [HelioRewards ABI](interfaces/HelioRewards.json)
 
 ## Addresses
-* "HelioToken": [0x5ba8cC27d398C405Fac73Af60c6F469158B06De9](https://testnet.bscscan.com/address/0x5ba8cC27d398C405Fac73Af60c6F469158B06De9),
-* "HelioRewards": [0x2D9d6BeC01Cb2Ef88793763514018893749c78Aa](https://testnet.bscscan.com/address/0x2D9d6BeC01Cb2Ef88793763514018893749c78Aa),
+* "HelioToken": [0xB4e1B0B582ed661F21aC004d58bF9688B35bC10D](https://testnet.bscscan.com/address/0xB4e1B0B582ed661F21aC004d58bF9688B35bC10D),
+* "HelioRewards": [0xF06cC84F1c00170eB031Db3b98aeE886280A0008](https://testnet.bscscan.com/address/0xF06cC84F1c00170eB031Db3b98aeE886280A0008),

@@ -80,7 +80,7 @@ contract Jar {
     event SpreadUpdated(uint newDuration);
     event Join(address indexed user, uint indexed amount);
     event Exit(address indexed user, uint indexed amount);
-    event Redeem(address indexed user, uint indexed amount);
+    event Redeem(address[] indexed user);
     event Cage();
 
     // --- Init ---
@@ -116,18 +116,27 @@ contract Jar {
         return _min(block.timestamp, endTime);
     }
     function tokensPerShare() public view returns (uint) {
-        if (totalSupply == 0) {
+        if (totalSupply <= 0 || block.timestamp <= lastUpdate) {
             return tps;
         }
-        uint last = lastTimeRewardApplicable();
-        return tps + (((last - lastUpdate) * rate * 1e18) / totalSupply);
+        uint latest = lastTimeRewardApplicable();
+        return tps + (((latest - lastUpdate) * rate * 1e18) / totalSupply);
     }
     function earned(address account) public view returns (uint) {
         uint perToken = tokensPerShare() - tpsPaid[account];
         return ((balanceOf[account] * perToken) / 1e18) + rewards[account];
     }
+    function redeemable(address account) public view returns (uint) {
+        return balanceOf[account] + earned(account);
+    }
     function getRewardForDuration() external view returns (uint) {
         return rate * spread;
+    }
+    function getAPR()external view returns (uint) {
+        if(spread == 0 || totalSupply == 0) {
+            return 0;
+        }
+        return ((rate * 31536000) / totalSupply) * 100;
     }
 
     // --- Administration ---
@@ -159,6 +168,10 @@ contract Jar {
         spread = _spread;
         emit SpreadUpdated(_spread);
     }
+    function setExitDelay(uint _exitDelay) external auth {
+        require(block.timestamp > endTime, "Jar/rewards-active");
+        exitDelay = _exitDelay;
+    }
     function cage() external auth {
         live = 0;
         emit Cage();
@@ -170,32 +183,36 @@ contract Jar {
 
         balanceOf[msg.sender] += wad;
         totalSupply += wad;
-        unstakeTime[msg.sender] = 0;
 
         DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
         emit Join(msg.sender, wad);
     }
     function exit(uint256 wad) external update(msg.sender) {
         require(live == 1, "Jar/not-live");
-        
+        require(wad > 0);
+
+        balanceOf[msg.sender] -= wad;        
         totalSupply -= wad;
         rewards[msg.sender] += wad;
-        balanceOf[msg.sender] -= wad;
         unstakeTime[msg.sender] = block.timestamp + exitDelay;
 
-        emit Exit(msg.sender, rewards[msg.sender]);
+        emit Exit(msg.sender, wad);
     }
-    function redeem() external {
+    function redeemBatch(address[] memory accounts) external {
+        // Target is to allow direct and on-behalf redemption
         require(live == 1, "Jar/not-live");
-        require(unstakeTime[msg.sender] != 0, "Jar/not-unstaked");
-        require(block.timestamp >= unstakeTime[msg.sender], "Jar/time-not-reached");
 
-        uint _rewards = rewards[msg.sender];
-        if (_rewards > 0) {
-            rewards[msg.sender] = 0;
-            DSTokenLike(USB).transfer(msg.sender, _rewards);
+        for (uint i = 0; i < accounts.length; i++) {
+            if (block.timestamp < unstakeTime[accounts[i]])
+                continue;
+            
+            uint _rewards = rewards[accounts[i]];
+            if (_rewards > 0) {
+                rewards[accounts[i]] = 0;
+                DSTokenLike(USB).transfer(accounts[i], _rewards);
+            }
         }
-
-        emit Redeem(msg.sender, _rewards);
+       
+        emit Redeem(accounts);
     }
 }

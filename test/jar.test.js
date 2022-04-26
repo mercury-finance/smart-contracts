@@ -237,7 +237,7 @@ describe('===Jar===', function () {
                 await network.provider.send("evm_mine"); // 0th
 
                 expect(await jar.earned(signer1.address)).to.equal("9999999999999999950");
-                expect(await jar.earned(signer2.address)).to.equal("59999999999999999900");
+                expect(await jar.earned(signer2.address)).to.equal("9999999999999999900");
 
                 tau = (await ethers.provider.getBlock()).timestamp;
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 10]);
@@ -248,8 +248,8 @@ describe('===Jar===', function () {
 
                 await network.provider.send("evm_mine"); // 10th
 
-                expect(await jar.rewards(signer1.address)).to.equal("64999999999999999950");
-                expect(await jar.rewards(signer2.address)).to.equal("114999999999999999900");
+                expect(await jar.rewards(signer1.address)).to.equal("14999999999999999950");
+                expect(await jar.rewards(signer2.address)).to.equal("14999999999999999900");
                 
             }
         });

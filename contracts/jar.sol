@@ -65,8 +65,9 @@ contract Jar {
     uint public exitDelay;   // User unstake delay    [sec]
     address public USB;      // The USB Stable Coin
 
-    mapping(address => uint) public tpsPaid;  //  USB per share paid
-    mapping(address => uint) public rewards;
+    mapping(address => uint) public tpsPaid;      // USB per share paid
+    mapping(address => uint) public rewards;      // Accumulated rewards
+    mapping(address => uint) public withdrawn;    // Capital withdrawn
     mapping(address => uint) public unstakeTime;  // Time of Unstake
 
     address public vat;      // CDP Engine
@@ -193,7 +194,7 @@ contract Jar {
 
         balanceOf[msg.sender] -= wad;        
         totalSupply -= wad;
-        rewards[msg.sender] += wad;
+        withdrawn[msg.sender] += wad;
         unstakeTime[msg.sender] = block.timestamp + exitDelay;
 
         emit Exit(msg.sender, wad);
@@ -206,10 +207,11 @@ contract Jar {
             if (block.timestamp < unstakeTime[accounts[i]])
                 continue;
             
-            uint _rewards = rewards[accounts[i]];
-            if (_rewards > 0) {
+            uint _amount = rewards[accounts[i]] + withdrawn[accounts[i]];
+            if (_amount > 0) {
                 rewards[accounts[i]] = 0;
-                DSTokenLike(USB).transfer(accounts[i], _rewards);
+                withdrawn[accounts[i]] = 0;
+                DSTokenLike(USB).transfer(accounts[i], _amount);
             }
         }
        

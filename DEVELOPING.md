@@ -15,6 +15,18 @@ aBNBc is ERC20 complaint contract.
 `Token` is the collateral token that you want to use
 Check that you have USB present in the wallet
 
+### Auction
+
+* `getTotalAuctionsCountForToken(<token>)` - gets total amount of auctions for collateral
+* `getAllActiveAuctionsForToken(<token>)` - gets all active auctions for collateral
+* `startAuction(<token>, <user_address>, <keeper_address>)` - starts an auction for a collateral, liquidates user and transfers incentives to keeper address
+* `buyFromAuction(<token>, <auctionId>, <collateral_amount>, <max_price>, <receiver_address>)` - buys collateral in auction(before this call user should approve `collateral_mount * max_price / ray` amount of USB to DAOInteraction contract)
+  1. `token` - address of collateral token
+  2. `auctionId` - Id of auction
+  3. `collateral_amount` - the maximum amount of collateral user wants to buy [wad]
+  4. `max_price` - the maximum acceptable price in USB per unit collateral [ray]
+  5. `receiver_address` - address that will receive the collateral
+
 
 ### Repay
 
@@ -24,6 +36,7 @@ Check that you have USB present in the wallet
 Note: aBNBc will stay collaterized(locked) in the vault.
 
 ### Withdraw
+
 Unlock and transfer funds to the user
 
 1. Call `interaction.withdraw(<token>, <abnbc_amount_to_withdraw>)`

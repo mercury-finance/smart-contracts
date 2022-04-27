@@ -6,6 +6,15 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+struct Sale {
+    uint256 pos;  // Index in active array
+    uint256 tab;  // Usb to raise       [rad]
+    uint256 lot;  // collateral to sell [wad]
+    address usr;  // Liquidated CDP
+    uint96  tic;  // Auction start time
+    uint256 top;  // Starting price     [ray]
+}
+
 interface VatLike {
     function init(bytes32 ilk) external;
     function hope(address usr) external;
@@ -17,12 +26,14 @@ interface VatLike {
 
     function ilks(bytes32) external view returns(uint256, uint256, uint256, uint256, uint256);
     function gem(bytes32, address) external view returns(uint256);
+    function usb(address) external view returns(uint256);
     function urns(bytes32, address) external view returns(uint256, uint256);
 }
 
-interface GemLike {
+interface GemJoinLike {
     function join(address usr, uint wad) external;
     function exit(address usr, uint wad) external;
+    function gem() external view returns (IERC20);
 }
 
 interface UsbGemLike {
@@ -30,9 +41,7 @@ interface UsbGemLike {
     function exit(address usr, uint wad) external;
 }
 
-interface UsbLike {
-    function approve(address usr, uint wad) external returns (bool);
-    function transferFrom(address src, address dst, uint wad) external;
+interface UsbLike is IERC20 {
 }
 
 interface PipLike {
@@ -48,6 +57,31 @@ interface JugLike {
 
     function ilks(bytes32) external view returns(uint256, uint256);
     function base() external view returns (uint256);
+}
+
+interface DogLike {
+    function bark(bytes32 ilk, address urn, address kpr) external returns (uint256 id);
+}
+
+interface ClipperLike {
+    function ilk() external view returns (bytes32);
+    function kick(
+        uint256 tab,
+        uint256 lot,
+        address usr,
+        address kpr
+    ) external returns (uint256);
+    function take(
+        uint256 id,
+        uint256 amt,
+        uint256 max,
+        address who,
+        bytes calldata data
+    ) external;
+    function kicks() external view returns (uint256);
+    function count() external view returns (uint256);
+    function list() external view returns (uint256[] memory);
+    function sales(uint256 auctionId) external view returns(Sale memory);
 }
 
 interface Rewards {
@@ -78,25 +112,29 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     UsbLike public usb;
     UsbGemLike public usbJoin;
     JugLike public jug;
+    DogLike public dog;
+    Rewards public helioRewards;
 
     struct CollateralType {
-        GemLike gem;
+        GemJoinLike gem;
         bytes32 ilk;
         uint32 live;
+        ClipperLike clip;
     }
 
-    mapping (address => uint256 ) private deposits;
-    mapping (address => CollateralType) public collaterals;
+    mapping (address => uint256) private deposits;
+    mapping (address => CollateralType) private collaterals;
 
     uint256 constant ONE = 10 ** 27;
-
-    Rewards public helioRewards;
+    uint256 constant RAY = 10 ** 27;
 
     function initialize(address vat_,
         address spot_,
         address usb_,
         address usbJoin_,
-        address jug_) public initializer {
+        address jug_,
+        address dog_
+    ) public initializer {
         __Ownable_init();
 
         wards[msg.sender] = 1;
@@ -106,6 +144,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         usb = UsbLike(usb_);
         usbJoin = UsbGemLike(usbJoin_);
         jug = JugLike(jug_);
+        dog = DogLike(dog_);
 
         vat.hope(usbJoin_);
 
@@ -132,16 +171,16 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         helioRewards = Rewards(helioRewards_);
     }
 
-    function setCollateralType(address token, address gemJoin, bytes32 ilk) external auth {
-        collaterals[token] = CollateralType(GemLike(gemJoin), ilk, 1);
+    function setCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
+        collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
         IERC20(token).approve(gemJoin,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
         vat.init(ilk);
         vat.rely(gemJoin);
     }
 
-    function enableCollateralType(address token, address gemJoin, bytes32 ilk) external auth {
-        collaterals[token] = CollateralType(GemLike(gemJoin), ilk, 1);
+    function enableCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
+        collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
         IERC20(token).approve(gemJoin,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
     }
@@ -406,6 +445,56 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         (uint256 duty,) = jug.ilks(collateralType.ilk);
         uint256 principal = rpow((jug.base() + duty), 31536000, ONE);
-        return (principal - ONE )/ (10 ** 7);
+        return (principal - ONE)/ (10 ** 7);
+    }
+
+    function startAuction(address token, address user, address keeper) external returns (uint256) {
+        return dog.bark(collaterals[token].ilk, user, keeper);
+    }
+
+    function buyFromAuction(
+        address token,
+        uint256 auctionId,
+        uint256 collateralAmount,
+        uint256 maxPrice,
+        address receiverAddress
+    ) external {
+        CollateralType memory collateral = collaterals[token];
+
+        uint usbBalanceBefore = usb.balanceOf(address(this));
+        uint gemBalanceBefore = collateral.gem.gem().balanceOf(address(this));
+
+        uint usbMaxAmount = maxPrice * collateralAmount / RAY;
+
+
+        usb.transferFrom(msg.sender, address(this), usbMaxAmount);
+        usb.approve(address(usbJoin), usbMaxAmount);
+        usbJoin.join(address(this), usbMaxAmount);
+
+        vat.hope(address(collateral.clip));
+
+        collateral.clip.take(auctionId, collateralAmount, maxPrice, address(this), "");
+
+        collateral.gem.exit(address(this), vat.gem(collateral.ilk, address(this)));
+        usbJoin.exit(address(this), vat.usb(address(this)) / RAY);
+
+        uint restUSB = usb.balanceOf(address(this)) - usbBalanceBefore;
+        uint restGem = collateral.gem.gem().balanceOf(address(this)) - gemBalanceBefore;
+        usb.transfer(receiverAddress, restUSB);
+        collateral.gem.gem().transfer(receiverAddress, restGem);
+    }
+
+    function getTotalAuctionsCountForToken(address token) public view returns (uint256) {
+        return collaterals[token].clip.kicks();
+    }
+
+    function getAllActiveAuctionsForToken(address token) public view returns (Sale[] memory sales) {
+        ClipperLike clip = collaterals[token].clip;
+        uint256[] memory auctionIds = clip.list();
+        uint auctionsCount = auctionIds.length;
+        sales = new Sale[](auctionsCount);
+        for (uint256 i = 0; i < auctionsCount; i++) {
+            sales[i] = clip.sales(auctionIds[i]);
+        }
     }
 }

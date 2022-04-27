@@ -4,7 +4,8 @@ const { VAT, SPOT, aBNBc,
     USB,
     UsbJoin,
     aBNBcJoin,
-    REAL_ABNBC} = require('../../addresses.json');
+    REAL_ABNBC,
+    NATIVE_TOKEN_ADDRESS} = require('../../addresses.json');
 const {ethers} = require("hardhat");
 
 
@@ -36,54 +37,54 @@ async function main() {
     await spot.deployed();
     console.log("Spot deployed to:", spot.address);
 
-    const abnbc = await this.ABNBC.deploy();
-    await abnbc.deployed();
-    console.log("aBNBc deployed to:", abnbc.address);
+    // const abnbc = await this.ABNBC.deploy();
+    // await abnbc.deployed();
+    // console.log("aBNBc deployed to:", abnbc.address);
 
-    const usb = await this.Usb.deploy(97);
-    await usb.deployed();
-    console.log("Usb deployed to:", usb.address);
+    // const usb = await this.Usb.deploy(97);
+    // await usb.deployed();
+    // console.log("Usb deployed to:", usb.address);
 
-    const usbJoin = await this.UsbJoin.deploy(vat.address, usb.address);
+    const usbJoin = await this.UsbJoin.deploy(vat.address, USB);
     await usbJoin.deployed();
     console.log("usbJoin deployed to:", usbJoin.address);
     //
-    const abnbcJoin = await this.GemJoin.deploy(vat.address, collateral, abnbc.address);
+    const abnbcJoin = await this.GemJoin.deploy(vat.address, collateral, aBNBc);
     await abnbcJoin.deployed();
     console.log("abnbcJoin deployed to:", abnbcJoin.address);
-
-    const bnbJoin = await this.GemJoin.deploy(VAT, collateral3, "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
-    await bnbJoin.deployed();
-    console.log("bnbJoin deployed to:", bnbJoin.address);
 
     const abnbcJoin2 = await this.GemJoin.deploy(vat.address, collateral2, REAL_ABNBC);
     await abnbcJoin2.deployed();
     console.log("abnbcJoin2 deployed to:", abnbcJoin2.address);
 
-    const oracle = await this.Oracle.deploy();
-    await oracle.deployed();
-    console.log("Oracle deployed to:", oracle.address);
-    const oracle2 = await this.Oracle.deploy();
-    await oracle2.deployed();
-    console.log("Oracle2 deployed to:", oracle2.address);
+    // const bnbJoin = await this.GemJoin.deploy(vat.address, collateral3, NATIVE_TOKEN_ADDRESS);
+    // await bnbJoin.deployed();
+    // console.log("bnbJoin deployed to:", bnbJoin.address);
+
+    // const oracle = await this.Oracle.deploy();
+    // await oracle.deployed();
+    // console.log("Oracle deployed to:", oracle.address);
+    // const oracle2 = await this.Oracle.deploy();
+    // await oracle2.deployed();
+    // console.log("Oracle2 deployed to:", oracle2.address);
 
     jug = await this.Jug.deploy(vat.address);
     await jug.deployed();
     console.log("Jug deployed to:", jug.address);
 
-    const flop = await this.Flop.deploy(VAT, UsbJoin);
+    const flop = await this.Flop.deploy(vat.address, usbJoin.address);
     await flop.deployed();
     console.log("Flop deployed to:", flop.address);
 
-    const flap = await this.Flap.deploy(VAT, UsbJoin);
+    const flap = await this.Flap.deploy(vat.address, usbJoin.address);
     await flap.deployed();
     console.log("Flap deployed to:", flap.address);
 
-    const vow = await this.Vow.deploy(VAT, flap.address, flop.address);
+    const vow = await this.Vow.deploy(vat.address, flap.address, flop.address);
     await vow.deployed();
     console.log("Vow deployed to:", vow.address);
 
-    const jar = await this.Jar.deploy("Helio Earn", "EARN", VAT, vow.address, UsbJoin);
+    const jar = await this.Jar.deploy("Helio Earn", "EARN", vat.address, vow.address, usbJoin.address);
     await jar.deployed();
     console.log("Jar deployed to:", jar.address);
 
@@ -92,23 +93,23 @@ async function main() {
         address: vat.address
     });
 
-    await hre.run("verify:verify", {
-        address: usb.address,
-        constructorArguments: [
-            97
-        ],
-    });
-
-    await hre.run("verify:verify", {
-        address: abnbc.address,
-    });
-
-    await hre.run("verify:verify", {
-        address: oracle.address,
-    });
-    await hre.run("verify:verify", {
-        address: oracle2.address,
-    });
+    // await hre.run("verify:verify", {
+    //     address: usb.address,
+    //     constructorArguments: [
+    //         97
+    //     ],
+    // });
+    //
+    // await hre.run("verify:verify", {
+    //     address: abnbc.address,
+    // });
+    //
+    // await hre.run("verify:verify", {
+    //     address: oracle.address,
+    // });
+    // await hre.run("verify:verify", {
+    //     address: oracle2.address,
+    // });
 
     await hre.run("verify:verify", {
         address: spot.address,
@@ -121,7 +122,7 @@ async function main() {
         address: usbJoin.address,
         constructorArguments: [
             vat.address,
-            usb.address
+            USB,
         ],
     });
     await hre.run("verify:verify", {
@@ -129,7 +130,7 @@ async function main() {
         constructorArguments: [
             vat.address,
             collateral,
-            abnbc.address
+            aBNBc,
         ],
     });
     await hre.run("verify:verify", {
@@ -140,14 +141,14 @@ async function main() {
             REAL_ABNBC
         ],
     });
-    await hre.run("verify:verify", {
-        address: bnbJoin.address,
-        constructorArguments: [
-            vat.address,
-            collateral3,
-            "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
-        ],
-    });
+    // await hre.run("verify:verify", {
+    //     address: bnbJoin.address,
+    //     constructorArguments: [
+    //         vat.address,
+    //         collateral3,
+    //         NATIVE_TOKEN_ADDRESS,
+    //     ],
+    // });
 
     await hre.run("verify:verify", {
         address: jug.address,
@@ -158,21 +159,21 @@ async function main() {
     await hre.run("verify:verify", {
         address: flop.address,
         constructorArguments: [
-            VAT,
-            UsbJoin
+            vat.address,
+            usbJoin.address,
         ],
     });
     await hre.run("verify:verify", {
         address: flap.address,
         constructorArguments: [
-            VAT,
-            UsbJoin
+            vat.address,
+            usbJoin.address,
         ],
     });
     await hre.run("verify:verify", {
         address: vow.address,
         constructorArguments: [
-            VAT,
+            vat.address,
             flap.address,
             flop.address
         ],
@@ -182,9 +183,9 @@ async function main() {
         constructorArguments: [
             "Helio Earn",
             "EARN",
-            VAT,
+            vat.address,
             vow.address,
-            UsbJoin
+            usbJoin.address,
         ],
     });
 

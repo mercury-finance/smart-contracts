@@ -78,8 +78,6 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     UsbLike public usb;
     UsbGemLike public usbJoin;
     JugLike public jug;
-    Rewards public helioRewards;
-    address public vow;
 
     struct CollateralType {
         GemLike gem;
@@ -91,6 +89,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     mapping (address => CollateralType) private collaterals;
 
     uint256 constant ONE = 10 ** 27;
+
+    Rewards public helioRewards;
 
     function initialize(address vat_,
         address spot_,
@@ -130,10 +130,6 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     function setHelioRewards(address helioRewards_) public auth {
         helioRewards = Rewards(helioRewards_);
-    }
-
-    function setVow(address vow_) public auth {
-        vow = vow_;
     }
 
     function setCollateralType(address token, address gemJoin, bytes32 ilk) external auth {
@@ -176,7 +172,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         deposits[token] += dink;
 
-//        drip(token);
+        drip(token);
 
         emit Deposit(msg.sender, dink);
         return dink;
@@ -192,7 +188,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         vat.move(msg.sender, address(this), usbAmount * 10**27);
         usbJoin.exit(msg.sender, usbAmount);
 
-//        drip(token);
+        drip(token);
         emit Borrow(msg.sender, usbAmount);
         return dart;
     }

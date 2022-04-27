@@ -17,7 +17,7 @@ async function main() {
     console.log('Running deploy script');
 
     let collateral = ethers.utils.formatBytes32String("aBNBc");
-    let collateral2 = ethers.utils.formatBytes32String("aBNBc2");
+    let collateral2 = ethers.utils.formatBytes32String("REALaBNBc");
 
     this.Interaction = await hre.ethers.getContractFactory("DAOInteraction");
     let interaction = this.Interaction.attach(INTERACTION);

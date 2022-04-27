@@ -79,7 +79,7 @@ contract JarR {
     // --- Events ---
     event Join(address indexed user, uint indexed amount);
     event Exit(address indexed user, uint indexed amount);
-    event Redeem(address indexed user, uint indexed amount);
+    event Redeem(address[] indexed user);
     event Cage();
 
     // --- Init ---
@@ -151,14 +151,20 @@ contract JarR {
 
         emit Exit(msg.sender, bal);
     }
-    function redeem() internal {
+    function redeemBatch(address[] memory accounts) external {
         require(live == 1, "Jar/not-live");
-        require(block.timestamp >= unstakeTime[msg.sender], "Jar/time-not-reached");
 
-        uint bal = redeemables[msg.sender];
-        redeemables[msg.sender] = 0;
+        for (uint i = 0; i < accounts.length; i++) {
+            if (block.timestamp < unstakeTime[accounts[i]])
+                continue;
 
-        DSTokenLike(USB).transfer(msg.sender, bal);
-        emit Redeem(msg.sender, bal);
+            uint256 redeemable = redeemables[accounts[i]];
+            if (redeemable > 0) {
+                redeemables[accounts[i]] = 0;
+                DSTokenLike(USB).transfer(accounts[i], redeemable);
+            }
+        }
+
+        emit Redeem(accounts);
     }
 }

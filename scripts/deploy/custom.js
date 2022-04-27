@@ -11,7 +11,7 @@ const { VAT,
     JUG,
     Oracle,
     VOW,
-    INTERACTION, REAL_ABNBC, REWARDS,
+    INTERACTION, REAL_ABNBC, REWARDS, DOG
 } = require('../../addresses.json');
 const {ethers} = require("hardhat");
 
@@ -33,7 +33,14 @@ async function main() {
     this.Oracle = await hre.ethers.getContractFactory("Oracle");
     this.Jug = await hre.ethers.getContractFactory("Jug");
     this.Interaction = await hre.ethers.getContractFactory("DAOInteraction");
+    this.Clip = await hre.ethers.getContractFactory("Clipper");
 
+    const clip1 = await this.Clip.deploy(VAT, SPOT, DOG, collateral);
+    await clip1.deployed();
+    console.log("Clip1 deployed to:", clip1.address);
+    const clip2 = await this.Clip.deploy(VAT, SPOT, DOG, collateral2);
+    await clip2.deployed();
+    console.log("Clip2 deployed to:", clip2.address);
 
     console.log("Setting permissions");
 
@@ -42,7 +49,7 @@ async function main() {
 
     // console.log("Vat...");
 
-    let vat = this.Vat.attach(VAT);
+    // let vat = this.Vat.attach(VAT);
     // await vat.init(collateral);
     // await vat.rely(aBNBcJoin);
     // await vat.rely(INTERACTION);
@@ -56,9 +63,9 @@ async function main() {
     //     JUG
     // )
 
-    // console.log("Setting collaterals");
-    await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral);
-    await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
+    console.log("Setting collaterals");
+    await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral, clip1.address);
+    await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2, clip2.address);
     console.log("Enable collaterals");
 
     // console.log(collateral);
@@ -66,10 +73,10 @@ async function main() {
     // await interaction.enableCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
     // console.log("Set rewards");
     // await interaction.setHelioRewards(REWARDS);
-    console.log("Drip");
-    await interaction.drip(aBNBc);
-    await interaction.drip(REAL_ABNBC);
-    console.log('Finished');
+    // console.log("Drip");
+    // await interaction.drip(aBNBc);
+    // await interaction.drip(REAL_ABNBC);
+    // console.log('Finished');
 }
 
 main()

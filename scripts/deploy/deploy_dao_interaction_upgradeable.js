@@ -1,8 +1,9 @@
 const hre = require("hardhat");
-const { ethers, upgrades } = require("hardhat");
+const {ethers, upgrades} = require("hardhat");
 require("@nomiclabs/hardhat-etherscan");
 
-const { VAT,
+const {
+    VAT,
     SPOT,
     aBNBc,
     USB,
@@ -14,6 +15,7 @@ const { VAT,
     REALaBNBcJoin,
     INTERACTION,
     REWARDS,
+    DOG,
 } = require('../../addresses.json');
 
 async function main() {
@@ -25,7 +27,10 @@ async function main() {
         SPOT,
         USB,
         UsbJoin,
-        JUG], {
+        JUG,
+        DOG,
+        REWARDS
+    ], {
         initializer: "initialize"
     });
 

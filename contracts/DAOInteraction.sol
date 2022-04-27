@@ -133,7 +133,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         address usb_,
         address usbJoin_,
         address jug_,
-        address dog_
+        address dog_,
+        address rewards_
     ) public initializer {
         __Ownable_init();
 
@@ -145,6 +146,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         usbJoin = UsbGemLike(usbJoin_);
         jug = JugLike(jug_);
         dog = DogLike(dog_);
+        helioRewards = Rewards(rewards_);
 
         vat.hope(usbJoin_);
 
@@ -165,10 +167,6 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         usb.approve(usbJoin_,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
-    }
-
-    function setHelioRewards(address helioRewards_) public auth {
-        helioRewards = Rewards(helioRewards_);
     }
 
     function setCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
@@ -200,64 +198,64 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         }
     }
 
-    function deposit(address token, uint256 dink) external returns (uint256){
+    function deposit(address participant, address token, uint256 dink) external returns (uint256){
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        IERC20(token).transferFrom(msg.sender, address(this), dink);
-        collateralType.gem.join(msg.sender, dink);
-        vat.behalf(msg.sender, address(this));
-        vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, int256(dink), 0);
+        IERC20(token).transferFrom(participant, address(this), dink);
+        collateralType.gem.join(participant, dink);
+        vat.behalf(participant, address(this));
+        vat.frob(collateralType.ilk, participant, participant, participant, int256(dink), 0);
 
         deposits[token] += dink;
 
 //        drip(token);
 
-        emit Deposit(msg.sender, dink);
+        emit Deposit(participant, dink);
         return dink;
     }
 
-    function borrow(address token, uint256 usbAmount) external returns(uint256) {
+    function borrow(address participant, address token, uint256 usbAmount) external returns(uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (, uint256 rate,,,) = vat.ilks(collateralType.ilk);
         uint256 dart = (usbAmount * 10 ** 27) / rate;
-        vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, int256(dart));
+        vat.frob(collateralType.ilk, participant, participant, participant, 0, int256(dart));
         vat.move(msg.sender, address(this), usbAmount * 10**27);
-        usbJoin.exit(msg.sender, usbAmount);
+        usbJoin.exit(participant, usbAmount);
 
 //        drip(token);
-        emit Borrow(msg.sender, usbAmount);
+        emit Borrow(participant, usbAmount);
         return dart;
     }
 
     // Burn user's USB.
     // N.B. User collateral stays the same.
-    function payback(address token, uint256 usbAmount) external returns(int256) {
+    function payback(address participant, address token, uint256 usbAmount) external returns(int256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        usb.transferFrom(msg.sender, address(this), usbAmount);
-        usbJoin.join(msg.sender, usbAmount);
+        usb.transferFrom(participant, address(this), usbAmount);
+        usbJoin.join(participant, usbAmount);
         (,uint256 rate,,,) = vat.ilks(collateralType.ilk);
         int256 dart = -int256((usbAmount * 10**27) / rate);
-        vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, dart);
+        vat.frob(collateralType.ilk, participant, participant, participant, 0, dart);
 
-        emit Payback(msg.sender, usbAmount);
+        emit Payback(participant, usbAmount);
         return dart;
     }
 
     // Unlock and transfer to the user `dink` amount of aBNBc
-    function withdraw(address token, uint256 dink) external returns(uint256) {
+    function withdraw(address participant, address token, uint256 dink) external returns(uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        uint256 unlocked = free(token, msg.sender);
+        uint256 unlocked = free(token, participant);
         if (unlocked < dink) {
             int256 diff = int256(dink) - int256(unlocked);
-            vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, -diff, 0);
-            vat.flux(collateralType.ilk, msg.sender, address(this), uint256(diff));
+            vat.frob(collateralType.ilk, participant, participant, participant, -diff, 0);
+            vat.flux(collateralType.ilk, participant, address(this), uint256(diff));
         }
         collateralType.gem.exit(msg.sender, dink);
         deposits[token] -= dink;

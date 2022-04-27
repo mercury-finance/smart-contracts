@@ -63,6 +63,7 @@ contract JarR {
 
     // --- Reward Data ---
     uint public spread;     // Distribution time    [sec]
+    uint public usbDeposit; // Total USBs in farm   [wad]
     uint public exitDelay;  // User unstake delay   [sec]
 
     uint256 public ratio;
@@ -102,25 +103,25 @@ contract JarR {
     // --- Mods ---
     modifier update() {
         if(totalSupply != 0) {
-            uint256 denominator = DSTokenLike(USB).balanceOf(address(this));
-            require(denominator > 0, "Jar/denominator-is-0");
-            ratio = (totalSupply * 1e18) / denominator;
+            require(usbDeposit > 0, "Jar/denominator-is-0");
+            ratio = (totalSupply * 1e18) / usbDeposit;
         }
         _;
     } 
 
     // --- Views ---
-    function multiplyAndDivide(uint256 a, uint256 b, uint256 c) internal pure returns (uint256) {
-        return (a / c) * b + ((a % c) * b) / c;
-    }
-    function balanceWithRewardsOf(address account) public view returns (uint256) {
-        uint256 shares = balanceOf[account];
-        return multiplyAndDivide(shares, 1e18, ratio);
+    function balanceOfWithRewards(address account) public view returns (uint256) {
+        return (balanceOf[account] * 1e18) / ratio;
     }
 
     // --- Aministration ---
+    function initialize(uint _spread, uint _exitDelay) public auth {
+        spread = _spread;
+        exitDelay = _exitDelay;
+    }
     function replenish(uint wad) public auth update {
-        
+        usbDeposit += wad;
+
         VatLike(vat).move(vow, address(this),wad * 1e27);
         UsbJoinLike(usbJoin).exit(address(this), wad);
     } 
@@ -136,6 +137,7 @@ contract JarR {
         uint bal = (wad * ratio) / 1e18; // hUSBs
         balanceOf[msg.sender] += bal;
         totalSupply += bal;
+        usbDeposit += wad;
 
         DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
         emit Join(msg.sender, bal);
@@ -147,6 +149,7 @@ contract JarR {
         balanceOf[msg.sender] -= wad;
         totalSupply -= wad;
         redeemables[msg.sender] += bal;  // USBs
+        usbDeposit -= bal;
         unstakeTime[msg.sender] = block.timestamp + exitDelay;
 
         emit Exit(msg.sender, bal);

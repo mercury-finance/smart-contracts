@@ -61,3 +61,21 @@ Unlock and transfer funds to the user
 https://ethereum.stackexchange.com/a/23110
 
 `web3.utils.hexToAscii(val)`
+
+## REWARDS
+
+### View Reward balance
+`pendingRewards(<user_address>)` - Maximum amount of tokens that can be claimed by user.
+
+### Claim
+`claim(<user_address>, <amount>)` - Claim `amount` of user tokens and transfer them to the `user` wallet
+
+### View distribution APY
+`distributionApy()` - rate in percent (like borrowApr)
+
+### ABI
+[HelioRewards ABI](interfaces/HelioRewards.json)
+
+## Addresses
+* "HelioToken": [0xB4e1B0B582ed661F21aC004d58bF9688B35bC10D](https://testnet.bscscan.com/address/0xB4e1B0B582ed661F21aC004d58bF9688B35bC10D),
+* "HelioRewards": [0xF06cC84F1c00170eB031Db3b98aeE886280A0008](https://testnet.bscscan.com/address/0xF06cC84F1c00170eB031Db3b98aeE886280A0008),

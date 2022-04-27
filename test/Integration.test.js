@@ -2,6 +2,7 @@ const { expect } = require('chai');
 const { BigNumber } = require('ethers');
 const { ethers, network } = require('hardhat');
 const Web3 = require('web3');
+const {ether} = require("@openzeppelin/test-helpers");
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -25,7 +26,10 @@ describe('===MVP1===', function () {
         dog,
         clipABNBC,
         abaci,
-        vow;
+        vow,
+        interaction,
+        rewards,
+        helio;
 
     let oracle;
 
@@ -36,6 +40,7 @@ describe('===MVP1===', function () {
 
 
     let collateral = ethers.utils.formatBytes32String("aBNBc");
+    let collateral2 = ethers.utils.formatBytes32String("aBNBc2");
 
     before(async function () {
 
@@ -56,6 +61,9 @@ describe('===MVP1===', function () {
         this.Abaci = await ethers.getContractFactory("LinearDecrease");
         this.Vow = await ethers.getContractFactory("Vow");
         this.Oracle = await ethers.getContractFactory("Oracle"); // Mock Oracle
+        this.Interaction = await ethers.getContractFactory("DAOInteraction"); // Mock Oracle
+        this.Rewards = await ethers.getContractFactory("HelioRewards");
+        this.Helio = await ethers.getContractFactory("HelioToken");
 
         // Core module
         vat = await this.Vat.connect(deployer).deploy();
@@ -95,6 +103,24 @@ describe('===MVP1===', function () {
         oracle = await this.Oracle.connect(deployer).deploy();
         await oracle.deployed();
 
+        rewards = await this.Rewards.connect(deployer).deploy(vat.address);
+        await rewards.deployed();
+        helio = await this.Helio.connect(deployer).deploy();
+        await helio.deployed();
+
+        interaction = await this.Interaction.connect(deployer).deploy();
+        await interaction.connect(deployer).initialize(
+            vat.address,
+            spot.address,
+            usb.address,
+            usbJoin.address,
+            jug.address,
+        );
+
+        await helio.connect(deployer).rely(rewards.address);
+        await rewards.connect(deployer).setHelioToken(helio.address);
+        await rewards.connect(deployer).initPool(collateral, "1000000001847694957439350500"); //6%
+        await interaction.connect(deployer).setHelioRewards(rewards.address);
         //////////////////////////////
         /** Initial Setup -------- **/
         //////////////////////////////
@@ -140,7 +166,6 @@ describe('===MVP1===', function () {
         // ==> BR**31536000 = 1.01
         // ==> BR = 1.01**(1/31536000)
         // ==> BR = 1.000000000315529215730000000 [ray]
-
         // Factoring out Ilk Duty Rate (1% Yearly)
         // ((1 * (BR + 0.000000000312410000000000000 DR)^31536000)-1) * 100 = 0.000000000312410000000000000 = 2% (BR + DR Yearly)
 
@@ -183,6 +208,8 @@ describe('===MVP1===', function () {
 
         // Initialize Stabilizer Module
         await vow.connect(deployer).rely(dog.address);
+
+        await vat.connect(deployer).rely(interaction.address);
     });
 
     it('should check collateralization and borrowing Usb', async function () {
@@ -240,10 +267,28 @@ describe('===MVP1===', function () {
         console.log("Usb(signer1)  : " + await (await vat.connect(signer1).usb(signer1.address)).toString());
         console.log("Debt          : " + await (await vat.connect(signer1).debt()).toString());
 
+        await interaction.connect(deployer).enableCollateralType(abnbc.address, gemJoin.address, collateral);
+        let borrowApr = await interaction.connect(deployer).borrowApr(abnbc.address);
+        console.log("Interaction borrow apr: " + borrowApr.toString());
+        let borrowed = await interaction.connect(signer1).borrowed(abnbc.address, signer1.address);
+        expect(borrowed.toString()).to.be.equal("550000000000000070000");
+        let distribution_rate = await rewards.connect(signer1).distributionApy();
+        console.log("Distribution APY: " + distribution_rate.toString());
+        // await interaction.setCollateralType(abnbc2.address, abnbcJoin2.address, collateral2, {from: deployer.address});
+
         // Update Stability Fees
         await network.provider.send("evm_increaseTime", [31536000]); // Jump 1 Year
-        await jug.connect(deployer).drip(collateral);
+        // await jug.connect(deployer).drip(collateral);
+        await interaction.connect(deployer).drip(abnbc.address);
         await network.provider.send("evm_mine");
+
+        borrowed = await interaction.connect(signer1).borrowed(abnbc.address, signer1.address);
+        expect(borrowed.toString()).to.be.equal("561000048476391336205"); //+2%
+        let unclaimed = await rewards.connect(signer1).pendingRewards(signer1.address);
+        console.log("Unclaimed rewards: " + unclaimed.toString());
+        await rewards.connect(signer1).claim(ether("10").toString());
+        let helioBalance = await helio.connect(signer1).balanceOf(signer1.address);
+        expect(helioBalance.toString()).to.equal(ether("10").toString());
 
         debt_rate = await (await vat.ilks(collateral)).rate;
         console.log("---After One Year");

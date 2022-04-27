@@ -14,7 +14,6 @@ describe('===Jar===', function () {
     let vat, 
         spot, 
         abnbc,
-        husb, 
         gemJoin, 
         jug,
         vow,
@@ -189,87 +188,69 @@ describe('===Jar===', function () {
                 tau = (await ethers.provider.getBlock()).timestamp;
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
 
-                await vow.connect(deployer).permit(jar.address, 1);
                 await jar.connect(deployer).initialize(usb.address, "10", "10");
-                await jar.connect(deployer).replenish("10" + wad);
-
-                // await network.provider.send("evm_mine"); // 10 seconds to start
-
-                // expect(await usb.balanceOf(jar.address)).to.equal("10" + wad);
-                // expect(await jar.spread()).to.equal("10");
-                // expect(await jar.exitDelay()).to.equal("10");
-
-                // tau = (await ethers.provider.getBlock()).timestamp;
-                // await network.provider.send("evm_setNextBlockTimestamp", [tau + 1]);
 
                 vat.connect(signer1).hope(usbJoin.address);
                 await usbJoin.connect(signer1).exit(signer1.address, "50" + wad);
                 await usb.connect(signer1).approve(jar.address, "50" + wad);
                 await jar.connect(signer1).join("50" + wad);
 
-                await network.provider.send("evm_mine"); // 0 seconds
+                await network.provider.send("evm_mine"); // PreJoin
 
-                // tau = (await ethers.provider.getBlock()).timestamp;
-                // await network.provider.send("evm_setNextBlockTimestamp", [tau + 10]);
+                tau = (await ethers.provider.getBlock()).timestamp;
+                await network.provider.send("evm_setNextBlockTimestamp", [tau + 10]);
 
-                // await network.provider.send("evm_mine"); // 0 seconds past start
+                await vow.connect(deployer).permit(jar.address, 1);
+                await jar.connect(deployer).replenish("10" + wad);
 
-                // expect(await jar.rewards(signer1.address)).to.equal("0");
+                await network.provider.send("evm_mine"); // 0th second
 
                 tau = (await ethers.provider.getBlock()).timestamp;
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 5]);
 
-                // await jar.connect(signer1).exit();
                 vat.connect(signer2).hope(usbJoin.address);
                 await usbJoin.connect(signer2).exit(signer2.address, "100" + wad);
                 await usb.connect(signer2).approve(jar.address, "100" + wad);
                 await jar.connect(signer2).join("100" + wad);
 
-                await network.provider.send("evm_mine"); // 5 seconds
+                await network.provider.send("evm_mine"); // 5th
 
-                // expect(await jar.rewards(signer1.address)).to.equal("55000000000000000000");
-
-                tau = (await ethers.provider.getBlock()).timestamp;
-                await network.provider.send("evm_setNextBlockTimestamp", [tau + 15]);
-                                
-                await jar.connect(deployer).replenish("10" + wad);
-
-                // await jar.connect(signer1).exit();
-
-                // await jar.connect(signer2).exit();
-
-                await network.provider.send("evm_mine"); // 0 seconds
+                expect(await jar.earned(signer1.address)).to.equal("5000000000000000000");
 
                 tau = (await ethers.provider.getBlock()).timestamp;
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 15]);
                                 
                 await jar.connect(deployer).replenish("10" + wad);
 
-                await jar.connect(signer1).exit();
+                await network.provider.send("evm_mine"); // 0th
 
-                await jar.connect(signer2).exit();
+                expect(await jar.earned(signer1.address)).to.equal("6666666666666666650");
+                expect(await jar.earned(signer2.address)).to.equal("3333333333333333300");
 
-                await network.provider.send("evm_mine"); // 15 seconds
+                tau = (await ethers.provider.getBlock()).timestamp;
+                await network.provider.send("evm_setNextBlockTimestamp", [tau + 15]);
+                                
+                await jar.connect(deployer).replenish("10" + wad);
 
-                expect(await jar.rewards(signer1.address)).to.equal("59999999999999999950");
-                expect(await jar.rewards(signer2.address)).to.equal("109999999999999999900");
+                await jar.connect(signer2).exit("50" + wad);
 
+                await network.provider.send("evm_mine"); // 0th
 
-                // vat.connect(signer2).hope(usbJoin.address);
-                // await usbJoin.connect(signer2).exit(signer2.address, "100" + wad);
-                // await usb.connect(signer2).approve(jar.address, "100" + wad);
-                // await jar.connect(signer2).join("100" + wad);
+                expect(await jar.earned(signer1.address)).to.equal("9999999999999999950");
+                expect(await jar.earned(signer2.address)).to.equal("9999999999999999900");
 
-                    // await network.provider.send("evm_mine"); // 5 seconds past start
+                tau = (await ethers.provider.getBlock()).timestamp;
+                await network.provider.send("evm_setNextBlockTimestamp", [tau + 10]);
+                                
+                await jar.connect(signer1).exit("50" + wad);
 
-                    // tau = (await ethers.provider.getBlock()).timestamp;
-                    // await network.provider.send("evm_setNextBlockTimestamp", [tau + 5]);
+                await jar.connect(signer2).exit("50" + wad);
 
-                    // await jar.connect(signer1).exit();
+                await network.provider.send("evm_mine"); // 10th
 
-                    // await network.provider.send("evm_mine"); // 10 seconds past start
-
-                    // expect(await jar.rewards(signer1.address)).to.equal("65333333333333333300");
+                expect(await jar.rewards(signer1.address)).to.equal("14999999999999999950");
+                expect(await jar.rewards(signer2.address)).to.equal("14999999999999999900");
+                
             }
         });
     })

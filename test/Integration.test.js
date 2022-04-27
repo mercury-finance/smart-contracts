@@ -366,4 +366,17 @@ describe('===MVP1===', function () {
         console.log(sale.lot);
         console.log(sale.tab);
     });
+
+    it('should check collateralization and borrowing Usb', async function () {
+
+        await abnbc.connect(signer1).approve(interaction.address, ethers.utils.parseEther("100000"));
+        await interaction.connect(signer1).deposit(abnbc.address, ether("600").toString());
+        let locked = await interaction.connect(signer1).locked(abnbc.address, signer1.address);
+        console.log("LOCKED: " + locked.toString())
+
+        await usb.connect(signer1).approve(interaction.address, ethers.utils.parseEther("100000"));
+        await interaction.connect(signer1).borrow(abnbc.address, ether("600").toString());
+        let borrowed = await interaction.connect(signer1).borrowed(abnbc.address, signer1.address);
+        console.log("Borrowed: " + borrowed.toString())
+    });
 });

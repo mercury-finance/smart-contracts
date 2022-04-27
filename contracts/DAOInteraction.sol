@@ -86,7 +86,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     mapping (address => uint256 ) private deposits;
-    mapping (address => CollateralType) private collaterals;
+    mapping (address => CollateralType) public collaterals;
 
     uint256 constant ONE = 10 ** 27;
 
@@ -172,7 +172,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         deposits[token] += dink;
 
-        drip(token);
+//        drip(token);
 
         emit Deposit(msg.sender, dink);
         return dink;
@@ -188,7 +188,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         vat.move(msg.sender, address(this), usbAmount * 10**27);
         usbJoin.exit(msg.sender, usbAmount);
 
-        drip(token);
+//        drip(token);
         emit Borrow(msg.sender, usbAmount);
         return dart;
     }

@@ -12,12 +12,15 @@ const { VAT,
     JUG,
     REAL_ABNBC,
     REALaBNBcJoin,
+    INTERACTION,
+    REWARDS,
 } = require('../../addresses.json');
 
 async function main() {
     console.log('Running deploy script');
 
     Interaction = await hre.ethers.getContractFactory("DAOInteraction");
+    // const interaction = Interaction.attach(INTERACTION);
     const interaction = await upgrades.deployProxy(Interaction, [VAT,
         SPOT,
         USB,
@@ -26,21 +29,34 @@ async function main() {
         initializer: "initialize"
     });
 
-    // const interaction = await this.Interaction.deploy(
-    //     VAT,
-    //     SPOT,
-    //     USB,
-    //     UsbJoin,
-    //     JUG
-    // );
-    await interaction.deployed();
+    // // const interaction = await this.Interaction.deploy(
+    // //     VAT,
+    // //     SPOT,
+    // //     USB,
+    // //     UsbJoin,
+    // //     JUG
+    // // );
+    // await interaction.deployed();
     console.log("interaction deployed to:", interaction.address);
-
+    //
     this.Vat = await hre.ethers.getContractFactory("Vat");
     console.log("Vat...");
-
+    //
     let vat = this.Vat.attach(VAT);
     await vat.rely(interaction.address);
+    // await vat.rely(interactionImplAddress);
+
+    console.log('Adding collateral types');
+    let collateral = ethers.utils.formatBytes32String("aBNBc");
+    let collateral2 = ethers.utils.formatBytes32String("aBNBc2");
+
+    // await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral);
+    // await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
+    // await interaction.enableCollateralType(aBNBc, aBNBcJoin, collateral);
+    // await interaction.enableCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
+    // await interaction.setHelioRewards(REWARDS);
+    // await interaction.drip(aBNBc);
+    // await interaction.drip(REAL_ABNBC);
 
     console.log('Validating code');
     let interactionImplAddress = await upgrades.erc1967.getImplementationAddress(interaction.address);
@@ -49,7 +65,7 @@ async function main() {
     await hre.run("verify:verify", {
         address: interactionImplAddress,
     });
-    //
+
     // await hre.run("verify:verify", {
     //     address: interaction.address,
     //     constructorArguments: [
@@ -60,13 +76,6 @@ async function main() {
     //         JUG,
     //     ],
     // });
-
-    console.log('Adding collateral types');
-    // let collateral = ethers.utils.formatBytes32String("aBNBc");
-    // let collateral2 = ethers.utils.formatBytes32String("aBNBc2");
-
-    // await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral);
-    // await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
 
     console.log('Finished');
 }

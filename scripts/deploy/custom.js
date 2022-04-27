@@ -11,7 +11,7 @@ const { VAT,
     JUG,
     Oracle,
     VOW,
-    INTERACTION, REAL_ABNBC
+    INTERACTION, REAL_ABNBC, REWARDS,
 } = require('../../addresses.json');
 const {ethers} = require("hardhat");
 
@@ -42,33 +42,13 @@ async function main() {
 
     // console.log("Vat...");
 
-    // let vat = this.Vat.attach(VAT);
+    let vat = this.Vat.attach(VAT);
     // await vat.init(collateral);
     // await vat.rely(aBNBcJoin);
     // await vat.rely(INTERACTION);
-    // await vat.rely(SPOT);
-    // await vat["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "150000" + rad);
-    // await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "50000" + rad);
-    // await vat["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "20000000000" + rad); // Normalized USB
-    // await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "50000000" + rad);
-    // await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("spot"), "500" + rad);
-    // await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "1" + rad);
-
-    // console.log("Spot...");
-    // let spot = this.Spot.attach(SPOT);
-    // await spot["file(bytes32,bytes32,address)"](collateral2, ethers.utils.formatBytes32String("pip"), REALOracle);
-    // await spot["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("mat"), "1250000000000000000000000000"); // Liquidation Ratio
-    // await spot["file(bytes32,uint256)"](ethers.utils.formatBytes32String("par"), "1" + ray); // It means pegged to 1$
-    // await spot.poke(collateral2);
-
-    // let jug = this.Jug.attach(JUG);
-    // await jug["file(bytes32,address)"](ethers.utils.formatBytes32String("vow"), VOW);
-
-    // console.log("Usb...");
-    // let usb = this.Usb.attach(USB);
-    // await usb.rely(UsbJoin);
 
     let interaction = this.Interaction.attach(INTERACTION);
+    // console.log("Set cores");
     // await interaction.setCores(
     //     VAT,
     //     SPOT,
@@ -76,9 +56,19 @@ async function main() {
     //     JUG
     // )
 
+    // console.log("Setting collaterals");
     await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral);
     await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
+    console.log("Enable collaterals");
 
+    // console.log(collateral);
+    // await interaction.enableCollateralType(aBNBc, aBNBcJoin, collateral);
+    // await interaction.enableCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
+    // console.log("Set rewards");
+    // await interaction.setHelioRewards(REWARDS);
+    console.log("Drip");
+    await interaction.drip(aBNBc);
+    await interaction.drip(REAL_ABNBC);
     console.log('Finished');
 }
 

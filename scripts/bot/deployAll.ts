@@ -30,7 +30,7 @@ const toBytes32 = ethers.utils.formatBytes32String;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const main = async () => {
-  const collateral = toBytes32("aBNBc");
+  // const collateral = toBytes32("aBNBc");
   const [deployer] = await ethers.getSigners();
   // const Vat = await ethers.getContractFactory("Vat");
   // const Spot = await ethers.getContractFactory("Spotter");
@@ -303,9 +303,9 @@ const main = async () => {
   const abnbcJoin = await ethers.getContractAt("GemJoin", ABNBC_JOIN);
   const usbJoin = await ethers.getContractAt("UsbJoin", USB_JOIN);
   const jug = await ethers.getContractAt("Jug", JUG);
-  const oracle = await ethers.getContractAt("Oracle", ORACLE); // Mock Oracle
+  // const oracle = await ethers.getContractAt("Oracle", ORACLE); // Mock Oracle
   const dog = await ethers.getContractAt("Dog", DOG);
-  const clip = await ethers.getContractAt("Clipper", CLIP);
+  // const clip = await ethers.getContractAt("Clipper", CLIP);
   const abacus = await ethers.getContractAt("LinearDecrease", ABACUS);
   const vow = await ethers.getContractAt("Vow", VOW);
   const interaction = await ethers.getContractAt("DAOInteraction", INTERACTION);
@@ -451,7 +451,96 @@ const main = async () => {
   //   constructorArguments: [],
   // });
 
-  console.log("verification ended");
+  // console.log("verification ended");
+
+  const NewJoin = await ethers.getContractFactory("GemJoin");
+  const newJoin = await NewJoin.deploy(
+    vat.address,
+    toBytes32("ceABNBC"),
+    "0xCa33FBAb46a05D7f8e3151975543a3a1f7463F63"
+  );
+  await newJoin.deployed();
+  const Clipper = await ethers.getContractFactory("Clipper");
+  const clip2 = await Clipper.connect(deployer).deploy(
+    vat.address,
+    spot.address,
+    dog.address,
+    toBytes32("ceABNBC")
+  );
+  await clip2.deployed();
+  await vat.connect(deployer).rely(clip2.address);
+  await vat.connect(deployer).rely(newJoin.address);
+  await dog.connect(deployer).rely(clip2.address);
+  await dog
+    .connect(deployer)
+    ["file(bytes32,bytes32,address)"](
+      toBytes32("ceABNBC"),
+      toBytes32("clip"),
+      clip2.address
+    );
+  await clip2.connect(deployer).rely(dog.address);
+  await clip2
+    .connect(deployer)
+    ["file(bytes32,uint256)"](toBytes32("buf"), toRay("1.01"));
+  await clip2
+    .connect(deployer)
+    ["file(bytes32,uint256)"](toBytes32("tail"), "3600");
+  await clip2
+    .connect(deployer)
+    ["file(bytes32,uint256)"](toBytes32("cusp"), toRay("0.1"));
+  await clip2
+    .connect(deployer)
+    ["file(bytes32,uint256)"](toBytes32("chip"), toWad("0"));
+  await clip2
+    .connect(deployer)
+    ["file(bytes32,uint256)"](toBytes32("tip"), toRad("0.1"));
+
+  await clip2
+    .connect(deployer)
+    ["file(bytes32,address)"](toBytes32("vow"), vow.address);
+  await clip2
+    .connect(deployer)
+    ["file(bytes32,address)"](toBytes32("calc"), abacus.address);
+  console.log("oracle config completed");
+
+  const Oracle = await ethers.getContractFactory("Oracle");
+  const oracle = await Oracle.deploy();
+  const collateral1Price = toWad("200");
+  await oracle.connect(deployer).setPrice(collateral1Price);
+  console.log("oracle config completed");
+
+  await spot
+    .connect(deployer)
+    ["file(bytes32,bytes32,address)"](
+      toBytes32("ceABNBC"),
+      toBytes32("pip"),
+      oracle.address
+    );
+
+  console.log(1)
+
+  await spot
+    .connect(deployer)
+    ["file(bytes32,bytes32,uint256)"](
+      toBytes32("ceABNBC"),
+      toBytes32("mat"),
+      "1250000000000000000000000000"
+    ); // Liquidation Ratio
+  console.log(2)
+  await spot
+    .connect(deployer)
+    ["file(bytes32,uint256)"](toBytes32("par"), toRay("1")); // It means pegged to 1$
+  await spot.connect(deployer).poke(toBytes32("ceABNBC"));
+  console.log("spot config completed");
+
+  await interaction
+    .connect(deployer)
+    .setCollateralType(
+      abnbc.address,
+      abnbcJoin.address,
+      toBytes32("ceABNBC"),
+      clip2.address
+    );
 };
 
 main()

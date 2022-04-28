@@ -52,18 +52,17 @@ async function main() {
     //
     let vat = this.Vat.attach(VAT);
     await vat.rely(interaction.address);
-    // await vat.rely(interactionImplAddress);
 
     console.log('Adding collateral types');
     let collateral = ethers.utils.formatBytes32String("aBNBc");
     let collateral2 = ethers.utils.formatBytes32String("aBNBc2");
 
-    // await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral);
-    // await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
-    await interaction.enableCollateralType(aBNBc, aBNBcJoin, collateral, CLIP1);
-    await interaction.enableCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2, CLIP2);
-    await interaction.drip(aBNBc);
-    await interaction.drip(REAL_ABNBC);
+    // await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral, CLIP1);
+    // await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2, CLIP2);
+    // await interaction.enableCollateralType(aBNBc, aBNBcJoin, collateral, CLIP1);
+    // await interaction.enableCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2, CLIP2);
+    // await interaction.drip(aBNBc);
+    // await interaction.drip(REAL_ABNBC);
 
     console.log('Validating code');
     let interactionImplAddress = await upgrades.erc1967.getImplementationAddress(interaction.address);

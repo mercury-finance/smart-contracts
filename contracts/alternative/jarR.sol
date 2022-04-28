@@ -63,8 +63,6 @@ contract JarR {
 
     // --- Reward Data ---
     uint public spread;     // Distribution time    [sec]
-    uint public startTime;  // Start of spread      [sec]
-    uint public endTime;    // startTime + spread   [sec]
     uint public exitDelay;  // User unstake delay   [sec]
 
     uint256 public ratio;
@@ -72,7 +70,6 @@ contract JarR {
 
     mapping(address => uint) public redeemables;  // Capital + Rewards
     mapping(address => uint) public unstakeTime;  // Time of Unstake
-    mapping(address => uint) public flag;         // Flag for force redemption
 
     address public vat;      // CDP Engine
     address public vow;      // Vow Surplus
@@ -87,6 +84,9 @@ contract JarR {
 
     // --- Init ---
     constructor(address _USB, string memory _name, string memory _symbol, address _vat, address _vow, address _usbJoin) {
+        wards[msg.sender] = 1;
+        live = 1;
+
         USB = _USB;
         name = _name;
         symbol = _symbol;
@@ -94,6 +94,7 @@ contract JarR {
         vat = _vat;
         vow = _vow;
         usbJoin = _usbJoin;
+        VatLike(vat).hope(usbJoin);
 
         ratio = 1e18;
     }
@@ -119,9 +120,7 @@ contract JarR {
 
     // --- Aministration ---
     function replenish(uint wad) public auth update {
-        startTime = block.timestamp;
-        endTime = block.timestamp + spread;
-
+        
         VatLike(vat).move(vow, address(this),wad * 1e27);
         UsbJoinLike(usbJoin).exit(address(this), wad);
     } 
@@ -131,42 +130,33 @@ contract JarR {
     }
 
     // --- User ---
-    function join(uint256 amount) public {
+    function join(uint256 wad) public { // amount in USBs
         require(live == 1, "Jar/not-live");
-        require(flag[msg.sender] == 0, "Jar/not-redeemed");
-        require(block.timestamp >= startTime, "Jar/not-started");
-        require(block.timestamp < endTime, "Jar/finished");
 
-        uint bal = amount * ratio;
+        uint bal = (wad * ratio) / 1e18; // hUSBs
         balanceOf[msg.sender] += bal;
         totalSupply += bal;
-        unstakeTime[msg.sender] = 0;
 
+        DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
         emit Join(msg.sender, bal);
     }
-    function exit() public {
+    function exit(uint256 wad) public { // amount in hUSBs
         require(live == 1, "Jar/not-live");
-        require(balanceOf[msg.sender] > 0, "Jar/no-balance");
-        require(flag[msg.sender] == 0, "Jar/not-redeemed");
 
-        uint bal = balanceOf[msg.sender] / ratio;
-        redeemables[msg.sender] += bal;
-        totalSupply -= balanceOf[msg.sender];
-        balanceOf[msg.sender] = 0;
+        uint bal = (wad * 1e18) / ratio; // USBs
+        balanceOf[msg.sender] -= wad;
+        totalSupply -= wad;
+        redeemables[msg.sender] += bal;  // USBs
         unstakeTime[msg.sender] = block.timestamp + exitDelay;
-        flag[msg.sender] = 1;
 
         emit Exit(msg.sender, bal);
     }
     function redeem() internal {
         require(live == 1, "Jar/not-live");
-        require(flag[msg.sender] == 1, "Jar/not-exit");
-        require(unstakeTime[msg.sender] != 0, "Jar/not-unstaked");
         require(block.timestamp >= unstakeTime[msg.sender], "Jar/time-not-reached");
 
         uint bal = redeemables[msg.sender];
         redeemables[msg.sender] = 0;
-        flag[msg.sender] = 0;
 
         DSTokenLike(USB).transfer(msg.sender, bal);
         emit Redeem(msg.sender, bal);

@@ -137,7 +137,7 @@ contract Jar {
         if(spread == 0 || totalSupply == 0) {
             return 0;
         }
-        return ((rate * 31536000) / totalSupply) * 100;
+        return ((rate * 31536000) / totalSupply);
     }
 
     // --- Administration ---

@@ -517,7 +517,7 @@ const main = async () => {
       oracle.address
     );
 
-  console.log(1)
+  console.log(1);
 
   await spot
     .connect(deployer)
@@ -526,7 +526,7 @@ const main = async () => {
       toBytes32("mat"),
       "1250000000000000000000000000"
     ); // Liquidation Ratio
-  console.log(2)
+  console.log(2);
   await spot
     .connect(deployer)
     ["file(bytes32,uint256)"](toBytes32("par"), toRay("1")); // It means pegged to 1$
@@ -536,8 +536,8 @@ const main = async () => {
   await interaction
     .connect(deployer)
     .setCollateralType(
-      abnbc.address,
-      abnbcJoin.address,
+      "0xCa33FBAb46a05D7f8e3151975543a3a1f7463F63",
+      newJoin.address,
       toBytes32("ceABNBC"),
       clip2.address
     );

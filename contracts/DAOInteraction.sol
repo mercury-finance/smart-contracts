@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "./hMath.sol";
 
 struct Sale {
     uint256 pos;  // Index in active array
@@ -225,9 +226,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (, uint256 rate,,,) = vat.ilks(collateralType.ilk);
-        uint256 dart = (usbAmount * 10 ** 27) / rate;
+        uint256 dart = hMath.mulDiv(usbAmount, 10 ** 27, rate);
         vat.frob(collateralType.ilk, participant, participant, participant, 0, int256(dart));
-        vat.move(msg.sender, address(this), usbAmount * 10**27);
+        vat.move(participant, address(this), usbAmount * 10**27);
         usbJoin.exit(participant, usbAmount);
 
 //        drip(token);
@@ -268,10 +269,10 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             vat.frob(collateralType.ilk, participant, participant, participant, -diff, 0);
             vat.flux(collateralType.ilk, participant, address(this), uint256(diff));
         }
-        collateralType.gem.exit(msg.sender, dink);
+        collateralType.gem.exit(participant, dink);
         deposits[token] -= dink;
 
-        emit Withdraw(msg.sender, dink);
+        emit Withdraw(participant, dink);
         return dink;
     }
 
@@ -422,30 +423,6 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return backedDebt / ink;
     }
 
-    function rpow(uint x, uint n, uint b) internal pure returns (uint z) {
-        assembly {
-            switch x case 0 {switch n case 0 {z := b} default {z := 0}}
-            default {
-                switch mod(n, 2) case 0 { z := b } default { z := x }
-                let half := div(b, 2)  // for rounding.
-                for { n := div(n, 2) } n { n := div(n,2) } {
-                    let xx := mul(x, x)
-                    if iszero(eq(div(xx, x), x)) { revert(0,0) }
-                    let xxRound := add(xx, half)
-                    if lt(xxRound, xx) { revert(0,0) }
-                    x := div(xxRound, b)
-                    if mod(n,2) {
-                        let zx := mul(z, x)
-                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) { revert(0,0) }
-                        let zxRound := add(zx, half)
-                        if lt(zxRound, zx) { revert(0,0) }
-                        z := div(zxRound, b)
-                    }
-                }
-            }
-        }
-    }
-
     // Returns borrow APR with 20 decimals.
     // I.e. 10% == 10 ethers
     function borrowApr(address token) public view returns(uint256) {
@@ -453,7 +430,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (uint256 duty,) = jug.ilks(collateralType.ilk);
-        uint256 principal = rpow((jug.base() + duty), 31536000, ONE);
+        uint256 principal = hMath.rpow((jug.base() + duty), 31536000, ONE);
         return (principal - ONE)/ (10 ** 7);
     }
 

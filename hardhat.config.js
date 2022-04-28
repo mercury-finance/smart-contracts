@@ -43,19 +43,19 @@ module.exports = {
         // 		blockNumber: 32968090
         // 	}
         // },
-		hardhat: {
-			host: "127.0.0.1",
-			port: 7545,
-			network_id: "*"
-		},
-        // 	hardhat: {
-        //   // allowUnlimitedContractSize: true,
-        // 		forking: {
-        // 			url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS_PROJECT_ID}/bsc/mainnet`,
-        // 			accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
-        // 			blockNumber: 16682038
-        // 		}
-        // 	},
+		// hardhat: {
+		// 	host: "127.0.0.1",
+		// 	port: 7545,
+		// 	network_id: "*"
+		// },
+        	hardhat: {
+          // allowUnlimitedContractSize: true,
+        		forking: {
+        			url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS_PROJECT_ID}/bsc/testnet`,
+        			accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
+        			blockNumber: 18843628
+        		}
+        	},
 
         bsc: {
             url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS_PROJECT_ID}/bsc/mainnet`,

@@ -32,7 +32,7 @@ async function main() {
     console.log('Adding rewards pool');
     let collateral = ethers.utils.formatBytes32String("aBNBc");
 
-    helioToken.rely(rewards.address);
+    await helioToken.rely(rewards.address);
     await rewards.setHelioToken(helioToken.address);
     await rewards.initPool(collateral, "1000000001847694957439350500"); //6%
 

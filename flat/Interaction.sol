@@ -924,11 +924,379 @@ abstract contract OwnableUpgradeable is Initializable, ContextUpgradeable {
     uint256[49] private __gap;
 }
 
+// File @openzeppelin/contracts/utils/structs/EnumerableSet.sol@v4.5.0
+// License-Identifier: MIT
+// OpenZeppelin Contracts v4.4.1 (utils/structs/EnumerableSet.sol)
+
+
+/**
+ * @dev Library for managing
+ * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive
+ * types.
+ *
+ * Sets have the following properties:
+ *
+ * - Elements are added, removed, and checked for existence in constant time
+ * (O(1)).
+ * - Elements are enumerated in O(n). No guarantees are made on the ordering.
+ *
+ * ```
+ * contract Example {
+ *     // Add the library methods
+ *     using EnumerableSet for EnumerableSet.AddressSet;
+ *
+ *     // Declare a set state variable
+ *     EnumerableSet.AddressSet private mySet;
+ * }
+ * ```
+ *
+ * As of v3.3.0, sets of type `bytes32` (`Bytes32Set`), `address` (`AddressSet`)
+ * and `uint256` (`UintSet`) are supported.
+ */
+library EnumerableSet {
+    // To implement this library for multiple types with as little code
+    // repetition as possible, we write it in terms of a generic Set type with
+    // bytes32 values.
+    // The Set implementation uses private functions, and user-facing
+    // implementations (such as AddressSet) are just wrappers around the
+    // underlying Set.
+    // This means that we can only create new EnumerableSets for types that fit
+    // in bytes32.
+
+    struct Set {
+        // Storage of set values
+        bytes32[] _values;
+        // Position of the value in the `values` array, plus 1 because index 0
+        // means a value is not in the set.
+        mapping(bytes32 => uint256) _indexes;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function _add(Set storage set, bytes32 value) private returns (bool) {
+        if (!_contains(set, value)) {
+            set._values.push(value);
+            // The value is stored at length-1, but we add 1 to all indexes
+            // and use 0 as a sentinel value
+            set._indexes[value] = set._values.length;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function _remove(Set storage set, bytes32 value) private returns (bool) {
+        // We read and store the value's index to prevent multiple reads from the same storage slot
+        uint256 valueIndex = set._indexes[value];
+
+        if (valueIndex != 0) {
+            // Equivalent to contains(set, value)
+            // To delete an element from the _values array in O(1), we swap the element to delete with the last one in
+            // the array, and then remove the last element (sometimes called as 'swap and pop').
+            // This modifies the order of the array, as noted in {at}.
+
+            uint256 toDeleteIndex = valueIndex - 1;
+            uint256 lastIndex = set._values.length - 1;
+
+            if (lastIndex != toDeleteIndex) {
+                bytes32 lastvalue = set._values[lastIndex];
+
+                // Move the last value to the index where the value to delete is
+                set._values[toDeleteIndex] = lastvalue;
+                // Update the index for the moved value
+                set._indexes[lastvalue] = valueIndex; // Replace lastvalue's index to valueIndex
+            }
+
+            // Delete the slot where the moved value was stored
+            set._values.pop();
+
+            // Delete the index for the deleted slot
+            delete set._indexes[value];
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function _contains(Set storage set, bytes32 value) private view returns (bool) {
+        return set._indexes[value] != 0;
+    }
+
+    /**
+     * @dev Returns the number of values on the set. O(1).
+     */
+    function _length(Set storage set) private view returns (uint256) {
+        return set._values.length;
+    }
+
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
+    function _at(Set storage set, uint256 index) private view returns (bytes32) {
+        return set._values[index];
+    }
+
+    /**
+     * @dev Return the entire set in an array
+     *
+     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
+     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
+     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
+     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
+     */
+    function _values(Set storage set) private view returns (bytes32[] memory) {
+        return set._values;
+    }
+
+    // Bytes32Set
+
+    struct Bytes32Set {
+        Set _inner;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function add(Bytes32Set storage set, bytes32 value) internal returns (bool) {
+        return _add(set._inner, value);
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function remove(Bytes32Set storage set, bytes32 value) internal returns (bool) {
+        return _remove(set._inner, value);
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function contains(Bytes32Set storage set, bytes32 value) internal view returns (bool) {
+        return _contains(set._inner, value);
+    }
+
+    /**
+     * @dev Returns the number of values in the set. O(1).
+     */
+    function length(Bytes32Set storage set) internal view returns (uint256) {
+        return _length(set._inner);
+    }
+
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
+    function at(Bytes32Set storage set, uint256 index) internal view returns (bytes32) {
+        return _at(set._inner, index);
+    }
+
+    /**
+     * @dev Return the entire set in an array
+     *
+     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
+     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
+     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
+     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
+     */
+    function values(Bytes32Set storage set) internal view returns (bytes32[] memory) {
+        return _values(set._inner);
+    }
+
+    // AddressSet
+
+    struct AddressSet {
+        Set _inner;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function add(AddressSet storage set, address value) internal returns (bool) {
+        return _add(set._inner, bytes32(uint256(uint160(value))));
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function remove(AddressSet storage set, address value) internal returns (bool) {
+        return _remove(set._inner, bytes32(uint256(uint160(value))));
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function contains(AddressSet storage set, address value) internal view returns (bool) {
+        return _contains(set._inner, bytes32(uint256(uint160(value))));
+    }
+
+    /**
+     * @dev Returns the number of values in the set. O(1).
+     */
+    function length(AddressSet storage set) internal view returns (uint256) {
+        return _length(set._inner);
+    }
+
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
+    function at(AddressSet storage set, uint256 index) internal view returns (address) {
+        return address(uint160(uint256(_at(set._inner, index))));
+    }
+
+    /**
+     * @dev Return the entire set in an array
+     *
+     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
+     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
+     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
+     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
+     */
+    function values(AddressSet storage set) internal view returns (address[] memory) {
+        bytes32[] memory store = _values(set._inner);
+        address[] memory result;
+
+        assembly {
+            result := store
+        }
+
+        return result;
+    }
+
+    // UintSet
+
+    struct UintSet {
+        Set _inner;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function add(UintSet storage set, uint256 value) internal returns (bool) {
+        return _add(set._inner, bytes32(value));
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function remove(UintSet storage set, uint256 value) internal returns (bool) {
+        return _remove(set._inner, bytes32(value));
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function contains(UintSet storage set, uint256 value) internal view returns (bool) {
+        return _contains(set._inner, bytes32(value));
+    }
+
+    /**
+     * @dev Returns the number of values on the set. O(1).
+     */
+    function length(UintSet storage set) internal view returns (uint256) {
+        return _length(set._inner);
+    }
+
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
+    function at(UintSet storage set, uint256 index) internal view returns (uint256) {
+        return uint256(_at(set._inner, index));
+    }
+
+    /**
+     * @dev Return the entire set in an array
+     *
+     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
+     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
+     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
+     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
+     */
+    function values(UintSet storage set) internal view returns (uint256[] memory) {
+        bytes32[] memory store = _values(set._inner);
+        uint256[] memory result;
+
+        assembly {
+            result := store
+        }
+
+        return result;
+    }
+}
+
 // File contracts/DAOInteraction.sol
 // License-Identifier: MIT
 
 
 
+
+
+struct Sale {
+    uint256 pos;  // Index in active array
+    uint256 tab;  // Usb to raise       [rad]
+    uint256 lot;  // collateral to sell [wad]
+    address usr;  // Liquidated CDP
+    uint96  tic;  // Auction start time
+    uint256 top;  // Starting price     [ray]
+}
 
 interface VatLike {
     function init(bytes32 ilk) external;
@@ -941,12 +1309,14 @@ interface VatLike {
 
     function ilks(bytes32) external view returns(uint256, uint256, uint256, uint256, uint256);
     function gem(bytes32, address) external view returns(uint256);
+    function usb(address) external view returns(uint256);
     function urns(bytes32, address) external view returns(uint256, uint256);
 }
 
-interface GemLike {
+interface GemJoinLike {
     function join(address usr, uint wad) external;
     function exit(address usr, uint wad) external;
+    function gem() external view returns (IERC20);
 }
 
 interface UsbGemLike {
@@ -954,9 +1324,7 @@ interface UsbGemLike {
     function exit(address usr, uint wad) external;
 }
 
-interface UsbLike {
-    function approve(address usr, uint wad) external returns (bool);
-    function transferFrom(address src, address dst, uint wad) external;
+interface UsbLike is IERC20 {
 }
 
 interface PipLike {
@@ -972,6 +1340,31 @@ interface JugLike {
 
     function ilks(bytes32) external view returns(uint256, uint256);
     function base() external view returns (uint256);
+}
+
+interface DogLike {
+    function bark(bytes32 ilk, address urn, address kpr) external returns (uint256 id);
+}
+
+interface ClipperLike {
+    function ilk() external view returns (bytes32);
+    function kick(
+        uint256 tab,
+        uint256 lot,
+        address usr,
+        address kpr
+    ) external returns (uint256);
+    function take(
+        uint256 id,
+        uint256 amt,
+        uint256 max,
+        address who,
+        bytes calldata data
+    ) external;
+    function kicks() external view returns (uint256);
+    function count() external view returns (uint256);
+    function list() external view returns (uint256[] memory);
+    function sales(uint256 auctionId) external view returns(Sale memory);
 }
 
 interface Rewards {
@@ -1002,25 +1395,33 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     UsbLike public usb;
     UsbGemLike public usbJoin;
     JugLike public jug;
+    DogLike public dog;
+    Rewards public helioRewards;
 
     struct CollateralType {
-        GemLike gem;
+        GemJoinLike gem;
         bytes32 ilk;
         uint32 live;
+        ClipperLike clip;
     }
 
-    mapping (address => uint256 ) private deposits;
+    mapping (address => uint256) private deposits;
     mapping (address => CollateralType) private collaterals;
 
-    uint256 constant ONE = 10 ** 27;
+    using EnumerableSet for EnumerableSet.AddressSet;
+    EnumerableSet.AddressSet private usersInDebt;
 
-    Rewards public helioRewards;
+    uint256 constant ONE = 10 ** 27;
+    uint256 constant RAY = 10 ** 27;
 
     function initialize(address vat_,
         address spot_,
         address usb_,
         address usbJoin_,
-        address jug_) public initializer {
+        address jug_,
+        address dog_,
+        address rewards_
+    ) public initializer {
         __Ownable_init();
 
         wards[msg.sender] = 1;
@@ -1030,6 +1431,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         usb = UsbLike(usb_);
         usbJoin = UsbGemLike(usbJoin_);
         jug = JugLike(jug_);
+        dog = DogLike(dog_);
+        helioRewards = Rewards(rewards_);
 
         vat.hope(usbJoin_);
 
@@ -1052,20 +1455,16 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
     }
 
-    function setHelioRewards(address helioRewards_) public auth {
-        helioRewards = Rewards(helioRewards_);
-    }
-
-    function setCollateralType(address token, address gemJoin, bytes32 ilk) external auth {
-        collaterals[token] = CollateralType(GemLike(gemJoin), ilk, 1);
+    function setCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
+        collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
         IERC20(token).approve(gemJoin,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
         vat.init(ilk);
         vat.rely(gemJoin);
     }
 
-    function enableCollateralType(address token, address gemJoin, bytes32 ilk) external auth {
-        collaterals[token] = CollateralType(GemLike(gemJoin), ilk, 1);
+    function enableCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
+        collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
         IERC20(token).approve(gemJoin,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
     }
@@ -1085,64 +1484,71 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         }
     }
 
-    function deposit(address token, uint256 dink) external returns (uint256){
+    function deposit(address participant, address token, uint256 dink) external returns (uint256){
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        IERC20(token).transferFrom(msg.sender, address(this), dink);
-        collateralType.gem.join(msg.sender, dink);
-        vat.behalf(msg.sender, address(this));
-        vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, int256(dink), 0);
+        IERC20(token).transferFrom(participant, address(this), dink);
+        collateralType.gem.join(participant, dink);
+        vat.behalf(participant, address(this));
+        vat.frob(collateralType.ilk, participant, participant, participant, int256(dink), 0);
 
         deposits[token] += dink;
 
-        drip(token);
+//        drip(token);
+        EnumerableSet.add(usersInDebt, participant);
 
-        emit Deposit(msg.sender, dink);
+        emit Deposit(participant, dink);
         return dink;
     }
 
-    function borrow(address token, uint256 usbAmount) external returns(uint256) {
+    function borrow(address participant, address token, uint256 usbAmount) external returns(uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (, uint256 rate,,,) = vat.ilks(collateralType.ilk);
         uint256 dart = (usbAmount * 10 ** 27) / rate;
-        vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, int256(dart));
+        vat.frob(collateralType.ilk, participant, participant, participant, 0, int256(dart));
         vat.move(msg.sender, address(this), usbAmount * 10**27);
-        usbJoin.exit(msg.sender, usbAmount);
+        usbJoin.exit(participant, usbAmount);
 
-        drip(token);
-        emit Borrow(msg.sender, usbAmount);
+//        drip(token);
+
+
+        emit Borrow(participant, usbAmount);
         return dart;
     }
 
     // Burn user's USB.
     // N.B. User collateral stays the same.
-    function payback(address token, uint256 usbAmount) external returns(int256) {
+    function payback(address participant, address token, uint256 usbAmount) external returns(int256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        usb.transferFrom(msg.sender, address(this), usbAmount);
-        usbJoin.join(msg.sender, usbAmount);
+        usb.transferFrom(participant, address(this), usbAmount);
+        usbJoin.join(participant, usbAmount);
         (,uint256 rate,,,) = vat.ilks(collateralType.ilk);
         int256 dart = -int256((usbAmount * 10**27) / rate);
-        vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, dart);
+        vat.frob(collateralType.ilk, participant, participant, participant, 0, dart);
 
-        emit Payback(msg.sender, usbAmount);
+        (, uint256 art) = vat.urns(collateralType.ilk, participant);
+        if (int256(rate * art) == dart) {
+            EnumerableSet.remove(usersInDebt, participant);
+        }
+        emit Payback(participant, usbAmount);
         return dart;
     }
 
     // Unlock and transfer to the user `dink` amount of aBNBc
-    function withdraw(address token, uint256 dink) external returns(uint256) {
+    function withdraw(address participant, address token, uint256 dink) external returns(uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        uint256 unlocked = free(token, msg.sender);
+        uint256 unlocked = free(token, participant);
         if (unlocked < dink) {
             int256 diff = int256(dink) - int256(unlocked);
-            vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, -diff, 0);
-            vat.flux(collateralType.ilk, msg.sender, address(this), uint256(diff));
+            vat.frob(collateralType.ilk, participant, participant, participant, -diff, 0);
+            vat.flux(collateralType.ilk, participant, address(this), uint256(diff));
         }
         collateralType.gem.exit(msg.sender, dink);
         deposits[token] -= dink;
@@ -1330,6 +1736,60 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         (uint256 duty,) = jug.ilks(collateralType.ilk);
         uint256 principal = rpow((jug.base() + duty), 31536000, ONE);
-        return (principal - ONE )/ (10 ** 7);
+        return (principal - ONE)/ (10 ** 7);
+    }
+
+    function startAuction(address token, address user, address keeper) external returns (uint256) {
+        return dog.bark(collaterals[token].ilk, user, keeper);
+    }
+
+    function buyFromAuction(
+        address token,
+        uint256 auctionId,
+        uint256 collateralAmount,
+        uint256 maxPrice,
+        address receiverAddress
+    ) external {
+        CollateralType memory collateral = collaterals[token];
+
+        uint usbBalanceBefore = usb.balanceOf(address(this));
+        uint gemBalanceBefore = collateral.gem.gem().balanceOf(address(this));
+
+        uint usbMaxAmount = maxPrice * collateralAmount / RAY;
+
+
+        usb.transferFrom(msg.sender, address(this), usbMaxAmount);
+        usb.approve(address(usbJoin), usbMaxAmount);
+        usbJoin.join(address(this), usbMaxAmount);
+
+        vat.hope(address(collateral.clip));
+
+        collateral.clip.take(auctionId, collateralAmount, maxPrice, address(this), "");
+
+        collateral.gem.exit(address(this), vat.gem(collateral.ilk, address(this)));
+        usbJoin.exit(address(this), vat.usb(address(this)) / RAY);
+
+        uint restUSB = usb.balanceOf(address(this)) - usbBalanceBefore;
+        uint restGem = collateral.gem.gem().balanceOf(address(this)) - gemBalanceBefore;
+        usb.transfer(receiverAddress, restUSB);
+        collateral.gem.gem().transfer(receiverAddress, restGem);
+    }
+
+    function getTotalAuctionsCountForToken(address token) public view returns (uint256) {
+        return collaterals[token].clip.kicks();
+    }
+
+    function getAllActiveAuctionsForToken(address token) public view returns (Sale[] memory sales) {
+        ClipperLike clip = collaterals[token].clip;
+        uint256[] memory auctionIds = clip.list();
+        uint auctionsCount = auctionIds.length;
+        sales = new Sale[](auctionsCount);
+        for (uint256 i = 0; i < auctionsCount; i++) {
+            sales[i] = clip.sales(auctionIds[i]);
+        }
+    }
+
+    function getUsersInDebt() external view returns (address[] memory){
+        return EnumerableSet.values(usersInDebt);
     }
 }

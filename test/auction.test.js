@@ -12,6 +12,7 @@ const {
   advanceTime,
   printSale,
 } = require("./helpers/utils");
+const {VAT} = require("../addresses.json");
 
 chai.use(solidity);
 chai.use(chaiAsPromised);
@@ -58,6 +59,8 @@ describe("Auction", () => {
     const Clipper = await ethers.getContractFactory("Clipper");
     const LinearDecrease = await ethers.getContractFactory("LinearDecrease");
     const Vow = await ethers.getContractFactory("Vow");
+    const HelioToken = await ethers.getContractFactory("HelioToken");
+    const HelioRewards = await ethers.getContractFactory("HelioRewards");
     const DAOInteraction = await ethers.getContractFactory("DAOInteraction");
 
     // Abacus
@@ -69,6 +72,15 @@ describe("Auction", () => {
     await vat.deployed();
     spot = await Spot.connect(deployer).deploy(vat.address);
     await spot.deployed();
+
+    const helioToken = await HelioToken.connect(deployer).deploy();
+    await helioToken.deployed();
+    const rewards = await HelioRewards.connect(deployer).deploy(vat.address);
+    await rewards.deployed();
+
+    await helioToken.rely(rewards.address);
+    await rewards.setHelioToken(helioToken.address);
+    await rewards.initPool(collateral, "1000000001847694957439350500"); //6%
 
     // Usb module
     usb = await Usb.connect(deployer).deploy(97);
@@ -122,6 +134,7 @@ describe("Auction", () => {
         usbJoin.address,
         jug.address,
         dog.address,
+        rewards.address,
       ],
       { deployer }
     );
@@ -383,9 +396,9 @@ describe("Auction", () => {
 
     await abnbc.connect(signer1).approve(interaction.address, dink);
     // Deposit collateral(aBNBc) to the interaction contract
-    await interaction.connect(signer1).deposit(abnbc.address, dink);
+    await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink);
     const dart = toWad("1000");
-    await interaction.connect(signer1).borrow(abnbc.address, dart);
+    await interaction.connect(signer1).borrow(signer1.address, abnbc.address, dart);
 
     // change collateral price
     await oracle.connect(deployer).setPrice(toWad("124"));
@@ -409,16 +422,16 @@ describe("Auction", () => {
     await abnbc.connect(signer1).approve(interaction.address, dink1);
     await abnbc.connect(signer2).approve(interaction.address, dink2);
     await abnbc.connect(signer3).approve(interaction.address, dink3);
-    await interaction.connect(signer1).deposit(abnbc.address, dink1);
-    await interaction.connect(signer2).deposit(abnbc.address, dink2);
-    await interaction.connect(signer3).deposit(abnbc.address, dink3);
+    await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink1);
+    await interaction.connect(signer2).deposit(signer2.address, abnbc.address, dink2);
+    await interaction.connect(signer3).deposit(signer3.address, abnbc.address, dink3);
 
     const dart1 = toWad("1000");
     const dart2 = toWad("5000");
     const dart3 = toWad("5000");
-    await interaction.connect(signer1).borrow(abnbc.address, dart1);
-    await interaction.connect(signer2).borrow(abnbc.address, dart2);
-    await interaction.connect(signer3).borrow(abnbc.address, dart3);
+    await interaction.connect(signer1).borrow(signer1.address, abnbc.address, dart1);
+    await interaction.connect(signer2).borrow(signer2.address, abnbc.address, dart2);
+    await interaction.connect(signer3).borrow(signer3.address, abnbc.address, dart3);
 
     await oracle.connect(deployer).setPrice(toWad("124"));
     await spot.connect(deployer).poke(collateral);
@@ -470,16 +483,16 @@ describe("Auction", () => {
     await abnbc.connect(signer1).approve(interaction.address, dink1);
     await abnbc.connect(signer2).approve(interaction.address, dink2);
     await abnbc.connect(signer3).approve(interaction.address, dink3);
-    await interaction.connect(signer1).deposit(abnbc.address, dink1);
-    await interaction.connect(signer2).deposit(abnbc.address, dink2);
-    await interaction.connect(signer3).deposit(abnbc.address, dink3);
+    await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink1);
+    await interaction.connect(signer2).deposit(signer2.address, abnbc.address, dink2);
+    await interaction.connect(signer3).deposit(signer3.address, abnbc.address, dink3);
 
     const dart1 = toWad("1000");
     const dart2 = toWad("5000");
     const dart3 = toWad("5000");
-    await interaction.connect(signer1).borrow(abnbc.address, dart1);
-    await interaction.connect(signer2).borrow(abnbc.address, dart2);
-    await interaction.connect(signer3).borrow(abnbc.address, dart3);
+    await interaction.connect(signer1).borrow(signer1.address, abnbc.address, dart1);
+    await interaction.connect(signer2).borrow(signer2.address, abnbc.address, dart2);
+    await interaction.connect(signer3).borrow(signer3.address, abnbc.address, dart3);
 
     await oracle.connect(deployer).setPrice(toWad("124"));
     await spot.connect(deployer).poke(collateral);

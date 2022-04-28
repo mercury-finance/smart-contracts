@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 struct Sale {
     uint256 pos;  // Index in active array
@@ -125,6 +126,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     mapping (address => uint256) private deposits;
     mapping (address => CollateralType) private collaterals;
 
+    using EnumerableSet for EnumerableSet.AddressSet;
+    EnumerableSet.AddressSet private usersInDebt;
+
     uint256 constant ONE = 10 ** 27;
     uint256 constant RAY = 10 ** 27;
 
@@ -210,6 +214,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         deposits[token] += dink;
 
 //        drip(token);
+        EnumerableSet.add(usersInDebt, participant);
 
         emit Deposit(participant, dink);
         return dink;
@@ -226,6 +231,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         usbJoin.exit(participant, usbAmount);
 
 //        drip(token);
+
+
         emit Borrow(participant, usbAmount);
         return dart;
     }
@@ -242,6 +249,10 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         int256 dart = -int256((usbAmount * 10**27) / rate);
         vat.frob(collateralType.ilk, participant, participant, participant, 0, dart);
 
+        (, uint256 art) = vat.urns(collateralType.ilk, participant);
+        if (int256(rate * art) == dart) {
+            EnumerableSet.remove(usersInDebt, participant);
+        }
         emit Payback(participant, usbAmount);
         return dart;
     }
@@ -494,5 +505,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         for (uint256 i = 0; i < auctionsCount; i++) {
             sales[i] = clip.sales(auctionIds[i]);
         }
+    }
+
+    function getUsersInDebt() external view returns (address[] memory){
+        return EnumerableSet.values(usersInDebt);
     }
 }

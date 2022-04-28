@@ -10,12 +10,17 @@
       "address": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
       "txHash": "0xf622ffcdaf13e946f7b8b14cddac4976b001275ede98b2b07c1fd1d660306c6e",
       "kind": "uups"
+    },
+    {
+      "address": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+      "txHash": "0x2817fcb48b9f0e4784fa3f87e8e4a0c79b120e2428d5166fc728710aba7ccb22",
+      "kind": "uups"
     }
   ],
   "impls": {
-    "6ac29e58c22d5a69896b867aa5ae1faa115dc4637e56f76c2041567f134523cb": {
-      "address": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
-      "txHash": "0xd26a4f3a1c5361526d3a0a6d08982fb9a4d80bef91ca9d960e58824bd099b668",
+    "0f7af621e34bff2d2a41bc57667c5c1ac2cebf6b8413e11ef6e8887bfc5f0264": {
+      "address": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE",
+      "txHash": "0x9fc74ad32364b086f5ca7acda6d747c5ca2d86d20ae72d5df2b1110f8f748fe2",
       "layout": {
         "storage": [
           {
@@ -80,77 +85,97 @@
             "slot": "201",
             "type": "t_mapping(t_address,t_uint256)",
             "contract": "DAOInteraction",
-            "src": "contracts/DAOInteraction.sol:59"
+            "src": "contracts/DAOInteraction.sol:98"
           },
           {
             "label": "vat",
             "offset": 0,
             "slot": "202",
-            "type": "t_contract(VatLike)2591",
+            "type": "t_contract(VatLike)1864",
             "contract": "DAOInteraction",
-            "src": "contracts/DAOInteraction.sol:72"
+            "src": "contracts/DAOInteraction.sol:111"
           },
           {
             "label": "spotter",
             "offset": 0,
             "slot": "203",
-            "type": "t_contract(SpotLike)2659",
+            "type": "t_contract(SpotLike)1922",
             "contract": "DAOInteraction",
-            "src": "contracts/DAOInteraction.sol:73"
+            "src": "contracts/DAOInteraction.sol:112"
           },
           {
             "label": "usb",
             "offset": 0,
             "slot": "204",
-            "type": "t_contract(UsbLike)2640",
+            "type": "t_contract(UsbLike)1903",
             "contract": "DAOInteraction",
-            "src": "contracts/DAOInteraction.sol:74"
+            "src": "contracts/DAOInteraction.sol:113"
           },
           {
             "label": "usbJoin",
             "offset": 0,
             "slot": "205",
-            "type": "t_contract(UsbGemLike)2621",
+            "type": "t_contract(UsbGemLike)1900",
             "contract": "DAOInteraction",
-            "src": "contracts/DAOInteraction.sol:75"
+            "src": "contracts/DAOInteraction.sol:114"
           },
           {
             "label": "jug",
             "offset": 0,
             "slot": "206",
-            "type": "t_contract(JugLike)2681",
+            "type": "t_contract(JugLike)1944",
             "contract": "DAOInteraction",
-            "src": "contracts/DAOInteraction.sol:76"
+            "src": "contracts/DAOInteraction.sol:115"
           },
           {
             "label": "dog",
             "offset": 0,
             "slot": "207",
-            "type": "t_contract(DogLike)2693",
+            "type": "t_contract(DogLike)1956",
             "contract": "DAOInteraction",
-            "src": "contracts/DAOInteraction.sol:77"
+            "src": "contracts/DAOInteraction.sol:116"
+          },
+          {
+            "label": "helioRewards",
+            "offset": 0,
+            "slot": "208",
+            "type": "t_contract(Rewards)2044",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:117"
           },
           {
             "label": "deposits",
             "offset": 0,
-            "slot": "208",
+            "slot": "209",
             "type": "t_mapping(t_address,t_uint256)",
             "contract": "DAOInteraction",
-            "src": "contracts/DAOInteraction.sol:86"
+            "src": "contracts/DAOInteraction.sol:126"
           },
           {
             "label": "collaterals",
             "offset": 0,
-            "slot": "209",
-            "type": "t_mapping(t_address,t_struct(CollateralType)2795_storage)",
+            "slot": "210",
+            "type": "t_mapping(t_address,t_struct(CollateralType)2152_storage)",
             "contract": "DAOInteraction",
-            "src": "contracts/DAOInteraction.sol:87"
+            "src": "contracts/DAOInteraction.sol:127"
+          },
+          {
+            "label": "usersInDebt",
+            "offset": 0,
+            "slot": "211",
+            "type": "t_struct(AddressSet)1457_storage",
+            "contract": "DAOInteraction",
+            "src": "contracts/DAOInteraction.sol:130"
           }
         ],
         "types": {
           "t_address": {
             "label": "address",
             "numberOfBytes": "20"
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]",
+            "numberOfBytes": "32"
           },
           "t_array(t_uint256)49_storage": {
             "label": "uint256[49]",
@@ -168,35 +193,43 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(DogLike)2693": {
+          "t_contract(ClipperLike)2012": {
+            "label": "contract ClipperLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(DogLike)1956": {
             "label": "contract DogLike",
             "numberOfBytes": "20"
           },
-          "t_contract(GemLike)2606": {
-            "label": "contract GemLike",
+          "t_contract(GemJoinLike)1885": {
+            "label": "contract GemJoinLike",
             "numberOfBytes": "20"
           },
-          "t_contract(JugLike)2681": {
+          "t_contract(JugLike)1944": {
             "label": "contract JugLike",
             "numberOfBytes": "20"
           },
-          "t_contract(SpotLike)2659": {
+          "t_contract(Rewards)2044": {
+            "label": "contract Rewards",
+            "numberOfBytes": "20"
+          },
+          "t_contract(SpotLike)1922": {
             "label": "contract SpotLike",
             "numberOfBytes": "20"
           },
-          "t_contract(UsbGemLike)2621": {
+          "t_contract(UsbGemLike)1900": {
             "label": "contract UsbGemLike",
             "numberOfBytes": "20"
           },
-          "t_contract(UsbLike)2640": {
+          "t_contract(UsbLike)1903": {
             "label": "contract UsbLike",
             "numberOfBytes": "20"
           },
-          "t_contract(VatLike)2591": {
+          "t_contract(VatLike)1864": {
             "label": "contract VatLike",
             "numberOfBytes": "20"
           },
-          "t_mapping(t_address,t_struct(CollateralType)2795_storage)": {
+          "t_mapping(t_address,t_struct(CollateralType)2152_storage)": {
             "label": "mapping(address => struct DAOInteraction.CollateralType)",
             "numberOfBytes": "32"
           },
@@ -204,12 +237,28 @@
             "label": "mapping(address => uint256)",
             "numberOfBytes": "32"
           },
-          "t_struct(CollateralType)2795_storage": {
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AddressSet)1457_storage": {
+            "label": "struct EnumerableSet.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)1156_storage",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(CollateralType)2152_storage": {
             "label": "struct DAOInteraction.CollateralType",
             "members": [
               {
                 "label": "gem",
-                "type": "t_contract(GemLike)2606",
+                "type": "t_contract(GemJoinLike)1885",
                 "offset": 0,
                 "slot": "0"
               },
@@ -224,9 +273,33 @@
                 "type": "t_uint32",
                 "offset": 0,
                 "slot": "2"
+              },
+              {
+                "label": "clip",
+                "type": "t_contract(ClipperLike)2012",
+                "offset": 4,
+                "slot": "2"
               }
             ],
             "numberOfBytes": "96"
+          },
+          "t_struct(Set)1156_storage": {
+            "label": "struct EnumerableSet.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
           },
           "t_uint256": {
             "label": "uint256",

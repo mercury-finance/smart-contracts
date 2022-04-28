@@ -34,15 +34,15 @@ async function main() {
     this.Jug = await hre.ethers.getContractFactory("Jug");
     this.Interaction = await hre.ethers.getContractFactory("DAOInteraction");
     this.Clip = await hre.ethers.getContractFactory("Clipper");
-
-    const clip1 = await this.Clip.deploy(VAT, SPOT, DOG, collateral);
-    await clip1.deployed();
-    console.log("Clip1 deployed to:", clip1.address);
-    const clip2 = await this.Clip.deploy(VAT, SPOT, DOG, collateral2);
-    await clip2.deployed();
-    console.log("Clip2 deployed to:", clip2.address);
-
-    console.log("Setting permissions");
+    //
+    // const clip1 = await this.Clip.deploy(VAT, SPOT, DOG, collateral);
+    // await clip1.deployed();
+    // console.log("Clip1 deployed to:", clip1.address);
+    // const clip2 = await this.Clip.deploy(VAT, SPOT, DOG, collateral2);
+    // await clip2.deployed();
+    // console.log("Clip2 deployed to:", clip2.address);
+    //
+    // console.log("Setting permissions");
 
     // let oracle = this.Oracle.attach(Oracle);
     // await oracle.setPrice("400" + wad); // 400$, mat = 80%, 400$ * 80% = 320$ With Safety Margin
@@ -54,7 +54,7 @@ async function main() {
     // await vat.rely(aBNBcJoin);
     // await vat.rely(INTERACTION);
 
-    let interaction = this.Interaction.attach(INTERACTION);
+    // let interaction = this.Interaction.attach(INTERACTION);
     // console.log("Set cores");
     // await interaction.setCores(
     //     VAT,
@@ -62,11 +62,11 @@ async function main() {
     //     UsbJoin,
     //     JUG
     // )
-
-    console.log("Setting collaterals");
-    await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral, clip1.address);
-    await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2, clip2.address);
-    console.log("Enable collaterals");
+    //
+    // console.log("Setting collaterals");
+    // await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral, clip1.address);
+    // await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2, clip2.address);
+    // console.log("Enable collaterals");
 
     // console.log(collateral);
     // await interaction.enableCollateralType(aBNBc, aBNBcJoin, collateral);
@@ -77,6 +77,15 @@ async function main() {
     // await interaction.drip(aBNBc);
     // await interaction.drip(REAL_ABNBC);
     // console.log('Finished');
+
+    await hre.run("verify:verify", {
+        address: aBNBcJoin,
+        constructorArguments: [
+            VAT,
+            collateral,
+            aBNBc,
+        ],
+    });
 }
 
 main()

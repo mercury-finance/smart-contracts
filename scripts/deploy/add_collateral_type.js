@@ -34,7 +34,10 @@ async function main() {
 
     let interaction = this.Interaction.attach(INTERACTION);
 
-    await interaction.setCollateralType(tokenAddress, tokenJoin.address, newCollateral);
+    await interaction.setCollateralType(tokenAddress, tokenJoin.address, newCollateral, clip.address);
+    // Clip deployed to: 0xf4f7967023eE5461Cb72D4cFfaC1Ec5B3852c77E
+    // tokenJoin deployed to: 0xE77F2103ddcA98DF4f866b9cE44afdFb65DBFB60
+    // Finished
 
     console.log('Finished');
 }

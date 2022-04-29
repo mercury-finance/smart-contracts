@@ -53,7 +53,7 @@ module.exports = {
         		forking: {
         			url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS_PROJECT_ID}/bsc/testnet`,
         			accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
-        			blockNumber: 18843628
+        			blockNumber: 18856440
         		}
         	},
 

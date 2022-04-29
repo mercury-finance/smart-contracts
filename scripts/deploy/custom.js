@@ -35,9 +35,14 @@ async function main() {
     this.Interaction = await hre.ethers.getContractFactory("DAOInteraction");
     this.Clip = await hre.ethers.getContractFactory("Clipper");
     //
-    // const clip1 = await this.Clip.deploy(VAT, SPOT, DOG, collateral);
-    // await clip1.deployed();
-    // console.log("Clip1 deployed to:", clip1.address);
+
+    const abnbcJoin = await this.GemJoin.deploy(VAT, collateral, aBNBc);
+    await abnbcJoin.deployed();
+    console.log("abnbcJoin deployed to:", abnbcJoin.address);
+
+    const clip1 = await this.Clip.deploy(VAT, SPOT, DOG, collateral);
+    await clip1.deployed();
+    console.log("Clip1 deployed to:", clip1.address);
     // const clip2 = await this.Clip.deploy(VAT, SPOT, DOG, collateral2);
     // await clip2.deployed();
     // console.log("Clip2 deployed to:", clip2.address);
@@ -54,7 +59,7 @@ async function main() {
     // await vat.rely(aBNBcJoin);
     // await vat.rely(INTERACTION);
 
-    // let interaction = this.Interaction.attach(INTERACTION);
+    let interaction = this.Interaction.attach(INTERACTION);
     // console.log("Set cores");
     // await interaction.setCores(
     //     VAT,
@@ -69,7 +74,7 @@ async function main() {
     // console.log("Enable collaterals");
 
     // console.log(collateral);
-    // await interaction.enableCollateralType(aBNBc, aBNBcJoin, collateral);
+    await interaction.enableCollateralType(aBNBc, abnbcJoin.address, collateral, clip1.address);
     // await interaction.enableCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
     // console.log("Set rewards");
     // await interaction.setHelioRewards(REWARDS);
@@ -78,14 +83,14 @@ async function main() {
     // await interaction.drip(REAL_ABNBC);
     // console.log('Finished');
 
-    await hre.run("verify:verify", {
-        address: aBNBcJoin,
-        constructorArguments: [
-            VAT,
-            collateral,
-            aBNBc,
-        ],
-    });
+    // await hre.run("verify:verify", {
+    //     address: aBNBcJoin,
+    //     constructorArguments: [
+    //         VAT,
+    //         collateral,
+    //         aBNBc,
+    //     ],
+    // });
 }
 
 main()

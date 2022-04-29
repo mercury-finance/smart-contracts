@@ -8,6 +8,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./hMath.sol";
 
+import "hardhat/console.sol";
+
 struct Sale {
     uint256 pos;  // Index in active array
     uint256 tab;  // Usb to raise       [rad]
@@ -221,21 +223,37 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return dink;
     }
 
+    function _mul(uint x, int y) internal pure returns (int z) {
+    unchecked {
+        z = int(x) * y;
+        require(int(x) >= 0);
+        require(y == 0 || z / y == int(x));
+    }
+    }
+
+    function _add(uint x, int y) internal pure returns (uint z) {
+    unchecked {
+        z = x + uint(y);
+        require(y >= 0 || z <= x);
+        require(y <= 0 || z >= x);
+    }
+    }
+
     function borrow(address participant, address token, uint256 usbAmount) external returns(uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (, uint256 rate,,,) = vat.ilks(collateralType.ilk);
-        uint256 dart = hMath.mulDiv(usbAmount, 10 ** 27, rate);
-        vat.frob(collateralType.ilk, participant, participant, participant, 0, int256(dart));
-        vat.move(participant, address(this), usbAmount * 10**27);
-        usbJoin.exit(participant, usbAmount);
+        int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
+        vat.frob(collateralType.ilk, participant, participant, participant, 0, dart);
+        uint256 mulResult = rate * uint256(dart);
+        vat.move(participant, address(this), mulResult);
+        usbJoin.exit(participant, mulResult / ONE);
 
 //        drip(token);
 
-
-        emit Borrow(participant, usbAmount);
-        return dart;
+        emit Borrow(participant, mulResult / ONE);
+        return uint256(dart);
     }
 
     // Burn user's USB.

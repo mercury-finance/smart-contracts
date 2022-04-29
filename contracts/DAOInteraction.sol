@@ -83,7 +83,9 @@ interface ClipperLike {
     function kicks() external view returns (uint256);
     function count() external view returns (uint256);
     function list() external view returns (uint256[] memory);
-    function sales(uint256 auctionId) external view returns(Sale memory);
+    function sales(uint256 auctionId) external view returns (Sale memory);
+    function getStatus(uint256 id) external view returns (bool needsRedo, uint256 price, uint256 lot, uint256 tab);
+    function redo(uint256 id, address kpr) external;
 }
 
 interface Rewards {
@@ -438,6 +440,11 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return dog.bark(collaterals[token].ilk, user, keeper);
     }
 
+    function resetAuction(address token, uint256 auctionId, address keeper) external {
+        collaterals[token].clip.redo(auctionId, keeper);
+    }
+
+
     function buyFromAuction(
         address token,
         uint256 auctionId,
@@ -482,6 +489,18 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         for (uint256 i = 0; i < auctionsCount; i++) {
             sales[i] = clip.sales(auctionIds[i]);
         }
+    }
+
+    function getAuctionStatus(
+        address token,
+        uint256 auctionId
+    ) external view returns(
+        bool needsRedo,
+        uint256 price,
+        uint256 lot,
+        uint256 tab
+    ) {
+        return collaterals[token].clip.getStatus(auctionId);
     }
 
     function getUsersInDebt() external view returns (address[] memory){

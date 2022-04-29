@@ -188,6 +188,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
         IERC20(token).approve(gemJoin,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
+        vat.rely(gemJoin);
     }
 
     function removeCollateralType(address token) external auth {

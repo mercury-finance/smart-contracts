@@ -503,6 +503,11 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return collaterals[token].clip.getStatus(auctionId);
     }
 
+    function getAllActiveAuctionIdsForToken(address token) public view returns (uint256[] memory) { 
+        return collaterals[token].clip.list();
+    }
+
+
     function getUsersInDebt() external view returns (address[] memory){
         return EnumerableSet.values(usersInDebt);
     }

@@ -59,9 +59,9 @@ async function main() {
 
     await vat["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "500000000" + rad);
     await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "50000000" + rad);
-    await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "1" + rad);
+    await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "100000000000000000" + ray);
     await vat["file(bytes32,bytes32,uint256)"](collateral2, ethers.utils.formatBytes32String("line"), "50000000" + rad);
-    await vat["file(bytes32,bytes32,uint256)"](collateral2, ethers.utils.formatBytes32String("dust"), "1" + rad);
+    await vat["file(bytes32,bytes32,uint256)"](collateral2, ethers.utils.formatBytes32String("dust"), "100000000000000000" + ray);
 
     console.log("Spot...");
     let spot = this.Spot.attach(SPOT);

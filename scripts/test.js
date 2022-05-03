@@ -65,13 +65,24 @@ async function main() {
     // for (const account of accounts) {
     //     console.log(account.address);
     // }
-    this.Usb = await ethers.getContractFactory("aBNBc");
-    let abnbc = this.Usb.attach(aBNBc);
+    this.ABNBC = await ethers.getContractFactory("aBNBc");
+    let abnbc = this.ABNBC.attach(aBNBc);
+
+    this.UsbFactory = await ethers.getContractFactory("Usb");
+    let usb = this.UsbFactory.attach(USB);
+
     await abnbc.connect(accounts[0]).mintMe(ether("10000").toString());
     await abnbc.connect(accounts[0]).approve(interaction.address, ether("10000").toString());
 
     await interaction.connect(accounts[0]).deposit(accounts[0].address, aBNBc, ether("10").toString());
     await interaction.connect(accounts[0]).borrow(accounts[0].address, aBNBc, ether("100").toString());
+
+    let usbBalance = await usb.balanceOf(accounts[0].address);
+    console.log(usbBalance.toString());
+    await usb.connect(accounts[0]).approve(interaction.address, ether("10000").toString());
+
+    await interaction.connect(accounts[0]).payback(accounts[0].address, aBNBc, ether("60").toString());
+    await interaction.connect(accounts[0]).withdraw(accounts[0].address, aBNBc, ether("4").toString());
 }
 
 main()

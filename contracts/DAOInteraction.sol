@@ -246,14 +246,17 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         (, uint256 rate,,,) = vat.ilks(collateralType.ilk);
         int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
+        if (uint256(dart) * rate < usbAmount * (10 ** 27)) {
+            dart += 1; //ceiling
+        }
         vat.frob(collateralType.ilk, participant, participant, participant, 0, dart);
         uint256 mulResult = rate * uint256(dart);
-        vat.move(participant, address(this), mulResult);
-        usbJoin.exit(participant, mulResult / ONE);
+        vat.move(participant, address(this), usbAmount * ONE);
+        usbJoin.exit(participant, usbAmount);
 
 //        drip(token);
 
-        emit Borrow(participant, mulResult / ONE);
+        emit Borrow(participant, usbAmount);
         return uint256(dart);
     }
 
@@ -266,11 +269,14 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         usb.transferFrom(participant, address(this), usbAmount);
         usbJoin.join(participant, usbAmount);
         (,uint256 rate,,,) = vat.ilks(collateralType.ilk);
-        int256 dart = -int256((usbAmount * 10**27) / rate);
-        vat.frob(collateralType.ilk, participant, participant, participant, 0, dart);
+        int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
+        if (uint256(dart) * rate < usbAmount * (10 ** 27)) {
+            dart += 1; //ceiling
+        }
+        vat.frob(collateralType.ilk, participant, participant, participant, 0, -dart);
 
         (, uint256 art) = vat.urns(collateralType.ilk, participant);
-        if (int256(rate * art) == dart) {
+        if ((int256(rate * art) / 10**27) == dart) {
             EnumerableSet.remove(usersInDebt, participant);
         }
         emit Payback(participant, usbAmount);
@@ -330,14 +336,16 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return rate / 10**9;
     }
 
-    // Returns how much USB user can borrow for one token of collateral
-    // i.e. 1 aBNBc worth `collateralRate` USB
+    // Returns the collateral ratio in percents with 18 decimals
     function collateralRate(address token) external view returns (uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        (,,uint256 spot,,) = vat.ilks(collateralType.ilk);
-        return spot / 10**9;
+        (,uint256 mat) = spotter.ilks(collateralType.ilk);
+
+//        (,,uint256 spot,,) = vat.ilks(collateralType.ilk);
+//        return spot / 10**9;
+        return 10**45 / mat;
     }
 
     // Total aBNBc deposited nominated in $

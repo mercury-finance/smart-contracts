@@ -59,7 +59,7 @@ contract HelioRewards {
     address public helioToken;
 
     bytes32 poolIlk;
-    uint256 rewardsPool;
+    uint256 public rewardsPool;
 
     constructor(address vat_) {
         live = 1;

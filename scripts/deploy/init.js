@@ -14,6 +14,8 @@ const { VAT,
     VOW,
     INTERACTION,
     REWARDS,
+    CLIP1,
+    CLIP2
 } = require('../../addresses.json');
 const {ethers} = require("hardhat");
 const {BN} = require("@openzeppelin/test-helpers");
@@ -57,9 +59,9 @@ async function main() {
 
     await vat["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "500000000" + rad);
     await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "50000000" + rad);
-    await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "1" + rad);
+    await vat["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "100000000000000000" + ray);
     await vat["file(bytes32,bytes32,uint256)"](collateral2, ethers.utils.formatBytes32String("line"), "50000000" + rad);
-    await vat["file(bytes32,bytes32,uint256)"](collateral2, ethers.utils.formatBytes32String("dust"), "1" + rad);
+    await vat["file(bytes32,bytes32,uint256)"](collateral2, ethers.utils.formatBytes32String("dust"), "100000000000000000" + ray);
 
     console.log("Spot...");
     let spot = this.Spot.attach(SPOT);
@@ -85,9 +87,10 @@ async function main() {
 
     console.log("Interaction...");
     let interaction = this.Interaction.attach(INTERACTION);
-    await interaction.enableCollateralType(aBNBc, aBNBcJoin, collateral);
-    await interaction.enableCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
-    await interaction.setHelioRewards(REWARDS);
+    await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral, CLIP1);
+    await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2, CLIP2);
+    // await interaction.enableCollateralType(aBNBc, aBNBcJoin, collateral);
+    // await interaction.enableCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
     await interaction.drip(aBNBc);
     await interaction.drip(REAL_ABNBC);
 

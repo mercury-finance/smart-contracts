@@ -10,5 +10,13 @@
 # TODO
 
 * Lock VAT contract for entering any person other than Interaction contract
-* Refactor Interaction to use interfaces rather imports
 * Check math operations in Interaction
+
+
+# DEPLOY
+
+* run deploy_core.js
+* run deploy_dao_interaction_upgradeable.js
+* run init.js
+
+

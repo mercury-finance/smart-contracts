@@ -115,12 +115,13 @@ describe('===MVP1===', function () {
             usb.address,
             usbJoin.address,
             jug.address,
+            dog.address,
+            rewards.address,
         );
 
         await helio.connect(deployer).rely(rewards.address);
         await rewards.connect(deployer).setHelioToken(helio.address);
         await rewards.connect(deployer).initPool(collateral, "1000000001847694957439350500"); //6%
-        await interaction.connect(deployer).setHelioRewards(rewards.address);
         //////////////////////////////
         /** Initial Setup -------- **/
         //////////////////////////////
@@ -138,8 +139,8 @@ describe('===MVP1===', function () {
         await vat.connect(deployer).rely(jug.address);
         await vat.connect(deployer).rely(dog.address);
         await vat.connect(deployer).rely(clipABNBC.address);
-        await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "2000" + rad); // Normalized USB
-        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "1200" + rad); // Normalized USB
+        await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "20000" + rad); // Normalized USB
+        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "12000" + rad); // Normalized USB
         await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "500" + rad); // Normalized USB
 
         await spot.connect(deployer)["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("pip"), oracle.address);
@@ -267,7 +268,7 @@ describe('===MVP1===', function () {
         console.log("Usb(signer1)  : " + await (await vat.connect(signer1).usb(signer1.address)).toString());
         console.log("Debt          : " + await (await vat.connect(signer1).debt()).toString());
 
-        await interaction.connect(deployer).enableCollateralType(abnbc.address, gemJoin.address, collateral);
+        await interaction.connect(deployer).enableCollateralType(abnbc.address, gemJoin.address, collateral, clipABNBC.address);
         let borrowApr = await interaction.connect(deployer).borrowApr(abnbc.address);
         console.log("Interaction borrow apr: " + borrowApr.toString());
         let borrowed = await interaction.connect(signer1).borrowed(abnbc.address, signer1.address);
@@ -365,5 +366,27 @@ describe('===MVP1===', function () {
         console.log("---After Auction Purchase")
         console.log(sale.lot);
         console.log(sale.tab);
+    });
+
+    it('Interaction test', async function () {
+
+        await abnbc.connect(signer1).approve(interaction.address, ethers.utils.parseEther("100000"));
+        await interaction.connect(signer1).deposit(signer1.address, abnbc.address, ether("1200").toString());
+        let locked = await interaction.connect(signer1).locked(abnbc.address, signer1.address);
+        console.log("LOCKED: " + locked.toString())
+
+        await usb.connect(signer1).approve(interaction.address, ethers.utils.parseEther("100000"));
+        await interaction.connect(signer1).borrow(signer1.address, abnbc.address, ether("600").toString());
+        let borrowed = await interaction.connect(signer1).borrowed(abnbc.address, signer1.address);
+        console.log("Borrowed: " + borrowed.toString())
+
+        await network.provider.send("evm_increaseTime", [31536000]); // Jump 1 Year
+        await jug.connect(deployer).drip(collateral);
+        await network.provider.send("evm_mine");
+
+        await interaction.connect(signer1).deposit(signer1.address, abnbc.address, ether("10").toString());
+        await interaction.connect(signer1).borrow(signer1.address, abnbc.address, ether("600").toString());
+        borrowed = await interaction.connect(signer1).borrowed(abnbc.address, signer1.address);
+        console.log("Borrowed: " + borrowed.toString())
     });
 });

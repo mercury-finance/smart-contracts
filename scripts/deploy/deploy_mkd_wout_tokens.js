@@ -5,7 +5,8 @@ const { VAT, SPOT, aBNBc,
     UsbJoin,
     aBNBcJoin,
     REAL_ABNBC,
-    NATIVE_TOKEN_ADDRESS} = require('../../addresses.json');
+    NATIVE_TOKEN_ADDRESS, DOG
+} = require('../../addresses.json');
 const {ethers} = require("hardhat");
 
 
@@ -28,6 +29,8 @@ async function main() {
     this.Flap = await hre.ethers.getContractFactory("Flapper");
     this.Vow = await hre.ethers.getContractFactory("Vow");
     this.Jar = await hre.ethers.getContractFactory("Jar");
+    this.Dog = await hre.ethers.getContractFactory("Dog");
+    this.Clip = await hre.ethers.getContractFactory("Clipper");
 
     const vat = await this.Vat.deploy();
     await vat.deployed();
@@ -84,9 +87,20 @@ async function main() {
     await vow.deployed();
     console.log("Vow deployed to:", vow.address);
 
+    const dog = await this.Dog.deploy(vat.address);
+    await dog.deployed();
+    console.log("Dog deployed to:", dog.address);
+
     const jar = await this.Jar.deploy("Helio Earn", "EARN", vat.address, vow.address, usbJoin.address);
     await jar.deployed();
     console.log("Jar deployed to:", jar.address);
+
+    const clip1 = await this.Clip.deploy(vat.address, spot.address, dog.address, collateral);
+    await clip1.deployed();
+    console.log("Clip1 deployed to:", clip1.address);
+    const clip2 = await this.Clip.deploy(vat.address, spot.address, dog.address, collateral2);
+    await clip2.deployed();
+    console.log("Clip2 deployed to:", clip2.address);
 
     console.log('Validating code');
     await hre.run("verify:verify", {

@@ -15,6 +15,18 @@ aBNBc is ERC20 complaint contract.
 `Token` is the collateral token that you want to use
 Check that you have USB present in the wallet
 
+### Auction
+
+* `getTotalAuctionsCountForToken(<token>)` - gets total amount of auctions for collateral
+* `getAllActiveAuctionsForToken(<token>)` - gets all active auctions for collateral
+* `startAuction(<token>, <user_address>, <keeper_address>)` - starts an auction for a collateral, liquidates user and transfers incentives to keeper address
+* `buyFromAuction(<token>, <auctionId>, <collateral_amount>, <max_price>, <receiver_address>)` - buys collateral in auction(before this call user should approve `collateral_mount * max_price / ray` amount of USB to DAOInteraction contract)
+  1. `token` - address of collateral token
+  2. `auctionId` - Id of auction
+  3. `collateral_amount` - the maximum amount of collateral user wants to buy [wad]
+  4. `max_price` - the maximum acceptable price in USB per unit collateral [ray]
+  5. `receiver_address` - address that will receive the collateral
+
 
 ### Repay
 
@@ -24,6 +36,7 @@ Check that you have USB present in the wallet
 Note: aBNBc will stay collaterized(locked) in the vault.
 
 ### Withdraw
+
 Unlock and transfer funds to the user
 
 1. Call `interaction.withdraw(<token>, <abnbc_amount_to_withdraw>)`
@@ -51,10 +64,10 @@ Unlock and transfer funds to the user
 
 ## Addresses
 
-* "INTERACTION": [0xfA792b240a196123A9a5C98514185E61290B5eed](https://testnet.bscscan.com/address/0xfA792b240a196123A9a5C98514185E61290B5eed),
-* "mock aBNBc": [0x34e31dBCDd0866B90C4d2F3a3572C7Ce7918088f](https://testnet.bscscan.com/address/0x34e31dBCDd0866B90C4d2F3a3572C7Ce7918088f),
+* "INTERACTION": [0xE8A954826660a78FFf62652FeD243E3fef262014](https://testnet.bscscan.com/address/0xE8A954826660a78FFf62652FeD243E3fef262014),
+* "mock aBNBc": [0x33284aFc0791F18011B86C2469A7625066345373](https://testnet.bscscan.com/address/0x33284aFc0791F18011B86C2469A7625066345373),
 * "REAL aBNBc": [0x46dE2FBAf41499f298457cD2d9288df4Eb1452Ab](https://testnet.bscscan.com/address/0x46dE2FBAf41499f298457cD2d9288df4Eb1452Ab),
-* "USB": [0x2b897B577d5277C056d763B58b93F718e2A9d7d6](https://testnet.bscscan.com/address/0x2b897B577d5277C056d763B58b93F718e2A9d7d6),
+* "USB": [0x86A6bdb0101051a0F5FeeD0941055Bca74F21D6C](https://testnet.bscscan.com/address/0x86A6bdb0101051a0F5FeeD0941055Bca74F21D6C),
 
 ## String to bytes32
 
@@ -77,5 +90,5 @@ https://ethereum.stackexchange.com/a/23110
 [HelioRewards ABI](interfaces/HelioRewards.json)
 
 ## Addresses
-* "HelioToken": [0xB4e1B0B582ed661F21aC004d58bF9688B35bC10D](https://testnet.bscscan.com/address/0xB4e1B0B582ed661F21aC004d58bF9688B35bC10D),
-* "HelioRewards": [0xF06cC84F1c00170eB031Db3b98aeE886280A0008](https://testnet.bscscan.com/address/0xF06cC84F1c00170eB031Db3b98aeE886280A0008),
+* "HelioToken": [0x97BBBc81eBF1F130315b717b165Ebc9193a046Cd](https://testnet.bscscan.com/address/0x97BBBc81eBF1F130315b717b165Ebc9193a046Cd),
+* "HelioRewards": [0x7ad1585f12742D21BBDD0e3Ed8DdE279B55565e3](https://testnet.bscscan.com/address/0x7ad1585f12742D21BBDD0e3Ed8DdE279B55565e3),

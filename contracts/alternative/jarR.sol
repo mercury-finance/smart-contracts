@@ -24,14 +24,6 @@ interface DSTokenLike {
     function transfer(address,uint) external;
     function transferFrom(address,address,uint) external;
 }
-interface VatLike {
-    function move(address,address,uint256) external;
-    function hope(address) external;
-}
-
-interface UsbJoinLike {
-    function exit(address,uint) external;
-}
 
 /*
    "Put rewards in the jar and close it".
@@ -57,12 +49,13 @@ contract JarR {
     // --- Derivative ---
     string public name;
     string public symbol;
-    uint public decimals = 18;
+    uint8 public decimals = 18;
     uint public totalSupply;
     mapping(address => uint) public balanceOf;
 
     // --- Reward Data ---
     uint public spread;     // Distribution time    [sec]
+    uint public usbDeposit; // Total USBs in farm   [wad]
     uint public exitDelay;  // User unstake delay   [sec]
 
     uint256 public ratio;
@@ -77,13 +70,15 @@ contract JarR {
     uint    public live;     // Active Flag
 
     // --- Events ---
+    event Initialized(uint indexed duration, uint indexed exitDelay);
+    event Replenished(uint reward);
     event Join(address indexed user, uint indexed amount);
     event Exit(address indexed user, uint indexed amount);
-    event Redeem(address indexed user, uint indexed amount);
+    event Redeem(address[] indexed user);
     event Cage();
 
     // --- Init ---
-    constructor(address _USB, string memory _name, string memory _symbol, address _vat, address _vow, address _usbJoin) {
+    constructor(address _USB, string memory _name, string memory _symbol, address _vat, address _vow) {
         wards[msg.sender] = 1;
         live = 1;
 
@@ -93,8 +88,6 @@ contract JarR {
 
         vat = _vat;
         vow = _vow;
-        usbJoin = _usbJoin;
-        VatLike(vat).hope(usbJoin);
 
         ratio = 1e18;
     }
@@ -102,27 +95,28 @@ contract JarR {
     // --- Mods ---
     modifier update() {
         if(totalSupply != 0) {
-            uint256 denominator = DSTokenLike(USB).balanceOf(address(this));
-            require(denominator > 0, "Jar/denominator-is-0");
-            ratio = (totalSupply * 1e18) / denominator;
+            require(usbDeposit > 0, "Jar/denominator-is-0");
+            ratio = (totalSupply * 1e18) / usbDeposit;
         }
         _;
     } 
 
     // --- Views ---
-    function multiplyAndDivide(uint256 a, uint256 b, uint256 c) internal pure returns (uint256) {
-        return (a / c) * b + ((a % c) * b) / c;
-    }
-    function balanceWithRewardsOf(address account) public view returns (uint256) {
-        uint256 shares = balanceOf[account];
-        return multiplyAndDivide(shares, 1e18, ratio);
+    function balanceOfWithRewards(address account) public view returns (uint256) {
+        return (balanceOf[account] * 1e18) / ratio;
     }
 
     // --- Aministration ---
-    function replenish(uint wad) public auth update {
-        
-        VatLike(vat).move(vow, address(this),wad * 1e27);
-        UsbJoinLike(usbJoin).exit(address(this), wad);
+    function initialize(uint _spread, uint _exitDelay) public auth {
+        spread = _spread;
+        exitDelay = _exitDelay;
+        emit Initialized(spread, exitDelay);
+    }
+    function replenish(uint wad) public update {
+        usbDeposit += wad;
+
+        DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
+        emit Replenished(wad);
     } 
     function cage() external auth {
         live = 0;
@@ -136,6 +130,7 @@ contract JarR {
         uint bal = (wad * ratio) / 1e18; // hUSBs
         balanceOf[msg.sender] += bal;
         totalSupply += bal;
+        usbDeposit += wad;
 
         DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
         emit Join(msg.sender, bal);
@@ -147,18 +142,25 @@ contract JarR {
         balanceOf[msg.sender] -= wad;
         totalSupply -= wad;
         redeemables[msg.sender] += bal;  // USBs
+        usbDeposit -= bal;
         unstakeTime[msg.sender] = block.timestamp + exitDelay;
 
         emit Exit(msg.sender, bal);
     }
-    function redeem() internal {
+    function redeemBatch(address[] memory accounts) external {
         require(live == 1, "Jar/not-live");
-        require(block.timestamp >= unstakeTime[msg.sender], "Jar/time-not-reached");
 
-        uint bal = redeemables[msg.sender];
-        redeemables[msg.sender] = 0;
+        for (uint i = 0; i < accounts.length; i++) {
+            if (block.timestamp < unstakeTime[accounts[i]])
+                continue;
 
-        DSTokenLike(USB).transfer(msg.sender, bal);
-        emit Redeem(msg.sender, bal);
+            uint256 redeemable = redeemables[accounts[i]];
+            if (redeemable > 0) {
+                redeemables[accounts[i]] = 0;
+                DSTokenLike(USB).transfer(accounts[i], redeemable);
+            }
+        }
+
+        emit Redeem(accounts);
     }
 }

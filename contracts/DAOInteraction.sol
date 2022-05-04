@@ -6,9 +6,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./hMath.sol";
 
-import "hardhat/console.sol";
 
 struct Sale {
     uint256 pos;  // Index in active array
@@ -105,6 +105,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(wards[msg.sender] == 1, "Interaction/not-authorized");
         _;
     }
+
+    using SafeERC20 for IERC20;
 
     event Deposit(address indexed user, uint256 amount);
     event Borrow(address indexed user, uint256 amount);
@@ -210,7 +212,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        IERC20(token).transferFrom(participant, address(this), dink);
+        IERC20(token).safeTransferFrom(participant, address(this), dink);
         collateralType.gem.join(participant, dink);
         vat.behalf(participant, address(this));
         vat.frob(collateralType.ilk, participant, participant, participant, int256(dink), 0);
@@ -266,7 +268,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        usb.transferFrom(participant, address(this), usbAmount);
+        usb.safeTransferFrom(participant, address(this), usbAmount);
         usbJoin.join(participant, usbAmount);
         (,uint256 rate,,,) = vat.ilks(collateralType.ilk);
         int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
@@ -480,7 +482,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint usbMaxAmount = maxPrice * collateralAmount / RAY;
 
 
-        usb.transferFrom(msg.sender, address(this), usbMaxAmount);
+        usb.safeTransferFrom(msg.sender, address(this), usbMaxAmount);
         usb.approve(address(usbJoin), usbMaxAmount);
         usbJoin.join(address(this), usbMaxAmount);
 
@@ -493,8 +495,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         uint restUSB = usb.balanceOf(address(this)) - usbBalanceBefore;
         uint restGem = collateral.gem.gem().balanceOf(address(this)) - gemBalanceBefore;
-        usb.transfer(receiverAddress, restUSB);
-        collateral.gem.gem().transfer(receiverAddress, restGem);
+        usb.safeTransfer(receiverAddress, restUSB);
+        collateral.gem.gem().safeTransfer(receiverAddress, restGem);
     }
 
     function getTotalAuctionsCountForToken(address token) public view returns (uint256) {

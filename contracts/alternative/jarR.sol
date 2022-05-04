@@ -24,14 +24,6 @@ interface DSTokenLike {
     function transfer(address,uint) external;
     function transferFrom(address,address,uint) external;
 }
-interface VatLike {
-    function move(address,address,uint256) external;
-    function hope(address) external;
-}
-
-interface UsbJoinLike {
-    function exit(address,uint) external;
-}
 
 /*
    "Put rewards in the jar and close it".
@@ -57,7 +49,7 @@ contract JarR {
     // --- Derivative ---
     string public name;
     string public symbol;
-    uint public decimals = 18;
+    uint8 public decimals = 18;
     uint public totalSupply;
     mapping(address => uint) public balanceOf;
 
@@ -78,13 +70,15 @@ contract JarR {
     uint    public live;     // Active Flag
 
     // --- Events ---
+    event Initialized(uint indexed duration, uint indexed exitDelay);
+    event Replenished(uint reward);
     event Join(address indexed user, uint indexed amount);
     event Exit(address indexed user, uint indexed amount);
     event Redeem(address[] indexed user);
     event Cage();
 
     // --- Init ---
-    constructor(address _USB, string memory _name, string memory _symbol, address _vat, address _vow, address _usbJoin) {
+    constructor(address _USB, string memory _name, string memory _symbol, address _vat, address _vow) {
         wards[msg.sender] = 1;
         live = 1;
 
@@ -94,8 +88,6 @@ contract JarR {
 
         vat = _vat;
         vow = _vow;
-        usbJoin = _usbJoin;
-        VatLike(vat).hope(usbJoin);
 
         ratio = 1e18;
     }
@@ -118,12 +110,13 @@ contract JarR {
     function initialize(uint _spread, uint _exitDelay) public auth {
         spread = _spread;
         exitDelay = _exitDelay;
+        emit Initialized(spread, exitDelay);
     }
-    function replenish(uint wad) public auth update {
+    function replenish(uint wad) public update {
         usbDeposit += wad;
 
-        VatLike(vat).move(vow, address(this),wad * 1e27);
-        UsbJoinLike(usbJoin).exit(address(this), wad);
+        DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
+        emit Replenished(wad);
     } 
     function cage() external auth {
         live = 0;

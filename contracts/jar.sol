@@ -23,13 +23,6 @@ interface DSTokenLike {
     function transfer(address,uint) external;
     function transferFrom(address,address,uint) external;
 }
-interface VatLike {
-    function move(address,address,uint256) external;
-    function hope(address) external;
-}
-interface UsbJoinLike {
-    function exit(address,uint) external;
-}
 
 /*
    "Put rewards in the jar and close it".
@@ -52,7 +45,7 @@ contract Jar {
     // --- Derivative ---
     string public name;
     string public symbol;
-    uint public decimals = 18;
+    uint8 public decimals = 18;
     uint public totalSupply;
     mapping(address => uint) public balanceOf;
 
@@ -85,15 +78,13 @@ contract Jar {
     event Cage();
 
     // --- Init ---
-    constructor(string memory _name, string memory _symbol, address _vat, address _vow, address _usbJoin) {
+    constructor(string memory _name, string memory _symbol, address _vat, address _vow) {
         wards[msg.sender] = 1;
         live = 1;
         name = _name;
         symbol = _symbol;
         vat = _vat;
         vow = _vow;
-        usbJoin = _usbJoin;
-        VatLike(vat).hope(usbJoin);
     }
 
     // --- Math ---
@@ -148,7 +139,7 @@ contract Jar {
         exitDelay = _exitDelay;
         emit Initialized(USB, spread, exitDelay);
     }
-    function replenish(uint wad) external auth update(address(0)) {
+    function replenish(uint wad) external update(address(0)) {
         if (block.timestamp >= endTime) {
             rate = wad / spread;
         } else {
@@ -159,8 +150,7 @@ contract Jar {
         lastUpdate = block.timestamp;
         endTime = block.timestamp + spread;
 
-        VatLike(vat).move(vow, address(this), wad * 1e27);
-        UsbJoinLike(usbJoin).exit(address(this), wad);
+        DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
         emit Replenished(wad);
     }
     function setSpread(uint _spread) external auth {

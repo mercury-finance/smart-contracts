@@ -88,7 +88,7 @@ describe('===MVP1===', function () {
         await abaci.deployed();
 
         // System Stabilizer module (balance sheet)
-        vow = await this.Vow.connect(deployer).deploy(vat.address, NULL_ADDRESS, NULL_ADDRESS);
+        vow = await this.Vow.connect(deployer).deploy(vat.address, NULL_ADDRESS, NULL_ADDRESS, NULL_ADDRESS);
         await vow.deployed();
 
         // Oracle module

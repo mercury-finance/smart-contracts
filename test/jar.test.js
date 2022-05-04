@@ -9,7 +9,7 @@ const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 const DATA = "0x02";
 
 describe('===Jar===', function () {
-    let deployer, signer1, signer2, signer3;
+    let deployer, signer1, signer2, signer3, multisig;
 
     let vat, 
         spot, 
@@ -35,7 +35,7 @@ describe('===Jar===', function () {
         /** Deployments ------------ **/
         ////////////////////////////////
 
-        [deployer, signer1, signer2, signer3] = await ethers.getSigners();
+        [deployer, signer1, signer2, signer3, multisig] = await ethers.getSigners();
 
         this.Vat = await ethers.getContractFactory("Vat");
         this.Spot = await ethers.getContractFactory("Spotter");
@@ -70,11 +70,11 @@ describe('===Jar===', function () {
         await jug.deployed();
 
         // System Stabilizer module (balance sheet)
-        vow = await this.Vow.connect(deployer).deploy(vat.address, NULL_ADDRESS, NULL_ADDRESS);
+        vow = await this.Vow.connect(deployer).deploy(vat.address, NULL_ADDRESS, NULL_ADDRESS, multisig.address);
         await vow.deployed();
 
         // Jar module 
-        jar = await this.Jar.connect(deployer).deploy("Helio USB", "hUSB", vat.address, vow.address, usbJoin.address);
+        jar = await this.Jar.connect(deployer).deploy("Helio USB", "hUSB", vat.address, vow.address);
         await jar.deployed();
 
         // Oracle module
@@ -197,13 +197,20 @@ describe('===Jar===', function () {
 
                 await network.provider.send("evm_mine"); // PreJoin
 
+                expect(await usb.balanceOf(multisig.address)).to.equal(0);
+
                 tau = (await ethers.provider.getBlock()).timestamp;
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 10]);
 
-                await vow.connect(deployer).permit(jar.address, 1);
-                await jar.connect(deployer).replenish("10" + wad);
+                await vow.connect(deployer).flap();
+                await vat.connect(multisig).hope(usbJoin.address)
+                await usbJoin.connect(multisig).exit(multisig.address, "100" + wad)
+                await usb.connect(multisig).approve(jar.address, "10" + wad)
+                await jar.connect(multisig).replenish("10" + wad);
 
                 await network.provider.send("evm_mine"); // 0th second
+
+                expect(await usb.balanceOf(jar.address)).to.be.equal("60" + wad);
 
                 tau = (await ethers.provider.getBlock()).timestamp;
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 5]);
@@ -220,7 +227,8 @@ describe('===Jar===', function () {
                 tau = (await ethers.provider.getBlock()).timestamp;
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 15]);
                                 
-                await jar.connect(deployer).replenish("10" + wad);
+                await usb.connect(multisig).approve(jar.address, "10" + wad)
+                await jar.connect(multisig).replenish("10" + wad);
 
                 await network.provider.send("evm_mine"); // 0th
 
@@ -230,7 +238,8 @@ describe('===Jar===', function () {
                 tau = (await ethers.provider.getBlock()).timestamp;
                 await network.provider.send("evm_setNextBlockTimestamp", [tau + 15]);
                                 
-                await jar.connect(deployer).replenish("10" + wad);
+                await usb.connect(multisig).approve(jar.address, "10" + wad)
+                await jar.connect(multisig).replenish("10" + wad);
 
                 await jar.connect(signer2).exit("50" + wad);
 

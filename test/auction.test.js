@@ -121,6 +121,7 @@ describe("Auction", () => {
     vow = await Vow.connect(deployer).deploy(
       vat.address,
       ethers.constants.AddressZero,
+      ethers.constants.AddressZero,
       ethers.constants.AddressZero
     );
     await vow.deployed();

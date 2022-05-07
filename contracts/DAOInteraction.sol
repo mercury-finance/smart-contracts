@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "./hMath.sol";
 
 
@@ -106,7 +106,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         _;
     }
 
-    using SafeERC20 for IERC20;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     event Deposit(address indexed user, uint256 amount);
     event Borrow(address indexed user, uint256 amount);
@@ -165,6 +165,11 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
+    function setUSBApprove() public auth {
+        usb.approve(address(usbJoin),
+            115792089237316195423570985008687907853269984665640564039457584007913129639935);
+    }
+
     function setCores(address vat_, address spot_,address usbJoin_,
         address jug_) public auth {
         vat = VatLike(vat_);
@@ -212,7 +217,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        IERC20(token).safeTransferFrom(participant, address(this), dink);
+        IERC20Upgradeable(token).safeTransferFrom(participant, address(this), dink);
         collateralType.gem.join(participant, dink);
         vat.behalf(participant, address(this));
         vat.frob(collateralType.ilk, participant, participant, participant, int256(dink), 0);
@@ -268,7 +273,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        usb.safeTransferFrom(participant, address(this), usbAmount);
+        IERC20Upgradeable(usb).safeTransferFrom(participant, address(this), usbAmount);
         usbJoin.join(participant, usbAmount);
         (,uint256 rate,,,) = vat.ilks(collateralType.ilk);
         int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
@@ -482,8 +487,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint usbMaxAmount = maxPrice * collateralAmount / RAY;
 
 
-        usb.safeTransferFrom(msg.sender, address(this), usbMaxAmount);
-        usb.approve(address(usbJoin), usbMaxAmount);
+        IERC20Upgradeable(usb).safeTransferFrom(msg.sender, address(this), usbMaxAmount);
         usbJoin.join(address(this), usbMaxAmount);
 
         vat.hope(address(collateral.clip));

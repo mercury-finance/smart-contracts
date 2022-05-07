@@ -113,7 +113,7 @@ contract GemJoin {
     }
 }
 
-contract UsbJoin {
+    contract UsbJoin {
     // --- Auth ---
     mapping (address => uint) public wards;
     function rely(address usr) external auth {

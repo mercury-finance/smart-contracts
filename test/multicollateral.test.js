@@ -11,7 +11,7 @@ const Interaction = artifacts.require('DAOInteraction');
 //The test will be updated on daily basis//
 ///////////////////////////////////////////
 
-xdescribe('===INTERACTION2-Multicollateral===', function () {
+describe('===INTERACTION2-Multicollateral===', function () {
     let deployer, signer1, signer2, mockVow;
 
     let vat,

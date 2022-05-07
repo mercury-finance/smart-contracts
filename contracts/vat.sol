@@ -187,7 +187,8 @@ contract Vat {
         require(either(urn.art == 0, tab >= ilk.dust), "Vat/dust");
 
         gem[i][v] = _sub(gem[i][v], dink);
-        usb[w]    = _add(usb[w],    dtab);
+
+        usb[w]    = _add(usb[w], dtab);
 
         urns[i][u] = urn;
         ilks[i]    = ilk;

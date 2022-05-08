@@ -176,6 +176,11 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
     }
 
+    function setUSBApprove() public auth {
+        usb.approve(address(usbJoin),
+            115792089237316195423570985008687907853269984665640564039457584007913129639935);
+    }
+
     function setCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
         collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
         IERC20(token).approve(gemJoin,
@@ -481,7 +486,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
 
         usb.transferFrom(msg.sender, address(this), usbMaxAmount);
-        usb.approve(address(usbJoin), usbMaxAmount);
+//        usb.approve(address(usbJoin), usbMaxAmount);
         usbJoin.join(address(this), usbMaxAmount);
 
         vat.hope(address(collateral.clip));

@@ -8,7 +8,7 @@ const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const DATA = "0x02";
 
-describe('===Jar===', function () {
+xdescribe('===Jar===', function () {
     let deployer, signer1, signer2, signer3, multisig;
 
     let vat, 

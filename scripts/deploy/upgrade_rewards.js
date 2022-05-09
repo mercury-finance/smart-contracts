@@ -11,7 +11,7 @@ const { VAT,
     REAL_ABNBC,
     REALaBNBcJoin,
     REWARDS,
-    HELIO_TOKEN, INTERACTION
+    HELIO_TOKEN, INTERACTION, ceBNBc,
 } = require('../../addresses.json');
 const {ethers} = require("hardhat");
 
@@ -20,33 +20,35 @@ async function main() {
 
     this.HelioToken = await hre.ethers.getContractFactory("HelioToken");
     this.HelioRewards = await hre.ethers.getContractFactory("HelioRewards");
+    this.Interaction = await hre.ethers.getContractFactory("DAOInteraction");
 
-    const helioToken = await this.HelioToken.deploy();
-    await helioToken.deployed();
-    console.log("helioToken deployed to:", helioToken.address);
+    const helioToken = this.HelioToken.attach(HELIO_TOKEN);
+    const interaction = this.Interaction.attach(INTERACTION);
 
     const rewards = await this.HelioRewards.deploy(VAT);
     await rewards.deployed();
     console.log("Rewards deployed to:", rewards.address);
 
-    console.log('Adding rewards pool');
-    let collateral = ethers.utils.formatBytes32String("aBNBc");
-
     await helioToken.rely(rewards.address);
-    await rewards.setHelioToken(helioToken.address);
-    await rewards.initPool(aBNBc, collateral, "1000000001847694957439350500"); //6%
-    await rewards.connect(deployer).rely(interaction.address);
+    await rewards.setHelioToken(HELIO_TOKEN);
+    await rewards.rely(INTERACTION);
+
+    console.log('Adding rewards pool');
+    let abnbcCollateral = ethers.utils.formatBytes32String("aBNBc");
+    let ceTokenCollateral = ethers.utils.formatBytes32String("ceToken");
+
+    await rewards.initPool(aBNBc, abnbcCollateral, "1000000001847694957439350500"); //6%
+    await rewards.initPool(ceBNBc, ceTokenCollateral, "1000000001847694957439350500"); //6%
+
+    interaction.setRewards(rewards.address);
 
     console.log('Validating code');
 
     await hre.run("verify:verify", {
-        address: REWARDS,
+        address: rewards.address,
         constructorArguments: [
             VAT
         ],
-    });
-    await hre.run("verify:verify", {
-        address: HELIO_TOKEN,
     });
 
     console.log('Finished');

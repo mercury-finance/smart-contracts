@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./hMath.sol";
 
+import "hardhat/console.sol";
+
 interface VatLike {
     function ilks(bytes32) external view returns (
         uint256 Art,   // [wad]
@@ -43,22 +45,31 @@ contract HelioRewards {
     struct Ilk {
         uint256 rewardRate;  // Collateral-specific, per-second reward rate [ray]
         uint256 rho;  // Time of last drip [unix epoch time]
+        bytes32 ilk;
     }
 
-    modifier poolInit {
-        require(ilks[poolIlk].rho != 0, "Reward/not-init");
+    modifier poolInit(address token) {
+        require(pools[token].rho != 0, "Reward/pool-not-init");
         _;
     }
 
     event Claimed(address indexed user, uint256 amount);
 
-    mapping (address => uint256) unclaimedRewards;
-    mapping (address => uint256) claimedRewards;
-    mapping (bytes32 => Ilk) ilks;
+
+    struct Pile {
+        uint256 amount;
+        uint256 ts;
+    }
+
+    mapping (address => mapping(address => Pile)) public piles; // usr => token(collateral type) => time last realise
+
+    mapping (address => uint256) public claimedRewards;
+    mapping (address => Ilk) public pools;
+    address[] public poolsList;
+
     VatLike                  public vat; // CDP engine
     address public helioToken;
 
-    bytes32 poolIlk;
     uint256 public rewardsPool;
 
     constructor(address vat_) {
@@ -71,74 +82,94 @@ contract HelioRewards {
         live = 0;
     }
 
-    function initPool(bytes32 ilk, uint256 rate) external auth {
-        ilks[ilk] = Ilk(rate, block.timestamp);
-        poolIlk = ilk;
+    function initPool(address token, bytes32 ilk, uint256 rate) external auth {
+        pools[token] = Ilk(rate, block.timestamp, ilk);
+        poolsList.push(token);
     }
 
     function setHelioToken(address helioToken_) external auth {
         helioToken = helioToken_;
     }
 
-    function setRate(bytes32 ilk, uint256 newRate) external auth {
-        Ilk storage pool = ilks[ilk];
+    function setRate(address token, uint256 newRate) external auth {
+        Ilk storage pool = pools[token];
         pool.rewardRate = newRate;
     }
 
+    // 1 USB is helioPrice() helios
     function helioPrice() public view returns(uint256) {
-        return 100000000000000000; //FIXME: HARDCODED 10 cents
+        return 10000000000000000000; //FIXME: HARDCODED 10 cents
     }
 
     // FIXME FOR DEBUG
-    function addRewards(address usr, uint256 amount) external poolInit auth {
-        unclaimedRewards[usr] += amount;
+    function addRewards(address usr, uint256 amount) external auth {
+        Pile storage pile = piles[usr][poolsList[0]];
+        pile.amount += amount;
     }
 
-    function rate() public view returns(uint256) {
-        return ilks[poolIlk].rewardRate;
+    function rate(address token) public view returns(uint256) {
+        return pools[token].rewardRate;
     }
 
-    function distributionApy() public view returns(uint256) {
-        return (hMath.rpow(ilks[poolIlk].rewardRate, 31536000, ONE) - ONE) / 10 ** 7;
+    // Yearly api in percents with 18 decimals
+    function distributionApy(address token) public view returns(uint256) {
+        return (hMath.rpow(pools[token].rewardRate, 31536000, ONE) - ONE) / 10 ** 7;
+    }
+//
+    function claimable(address token, address usr) public poolInit(token) view returns (uint256) {
+        return piles[usr][token].amount + unrealisedRewards(token, usr);
     }
 
-    function pendingRewards(address usr) public poolInit view returns(uint256) {
-        (uint256 totalDebt, uint256 rate) = vat.ilks(poolIlk);
-        (, uint256 art) = vat.urns(poolIlk, usr);
-        uint256 usrDebt = hMath.mulDiv(art, rate, 10 ** 27);
-        uint256 shares = hMath.mulDiv(usrDebt, rewardsPool, totalDebt);
-        return unclaimedRewards[usr] + shares - claimedRewards[usr];
-    }
-
-    function withDraw(address usr, uint256 dart) external poolInit auth {
-        (uint256 totalDebt,) = vat.ilks(poolIlk);
-        uint256 shares = hMath.mulDiv(dart, rewardsPool, totalDebt);
-        rewardsPool -= shares;
-        unclaimedRewards[usr] += shares;
-    }
-
-    function claim(uint256 amount) external poolInit {
-        require(amount <= pendingRewards(msg.sender), "Rewards/not-enough-rewards");
-        if (unclaimedRewards[msg.sender] >= amount) {
-            unclaimedRewards[msg.sender] -= amount;
-        } else {
-            uint256 diff = amount - unclaimedRewards[msg.sender];
-            claimedRewards[msg.sender] = diff;
-            unclaimedRewards[msg.sender] = 0;
+    function pendingRewards(address usr) public view returns(uint256) {
+        uint256 i = 0;
+        uint256 acc = 0;
+        while (i < poolsList.length) {
+            acc += claimable(poolsList[i], usr);
+            i++;
         }
+        return acc - claimedRewards[usr];
+    }
+
+    // Called when user return borrow amount.
+    function withdraw(address token, address usr) external auth poolInit(token) {
+        drop(token, usr);
+    }
+
+    // Called whenever user borrow some amount
+    function deposit(address token, address usr) external auth poolInit(token) {
+        drop(token, usr);
+    }
+
+    //drop unrealised rewards
+    function drop(address token, address usr) private {
+        Pile storage pile = piles[usr][token];
+
+        pile.amount += unrealisedRewards(token, usr);
+        pile.ts = block.timestamp;
+    }
+
+    function unrealisedRewards(address token, address usr) public poolInit(token) view returns(uint256) {
+        bytes32 poolIlk = pools[token].ilk;
+        (, uint256 usrDebt) = vat.urns(poolIlk, usr);
+        uint256 last = piles[usr][token].ts;
+        if (last == 0) {
+            return 0;
+        }
+        uint256 rate = hMath.rpow(pools[token].rewardRate, block.timestamp - last, ONE);
+        uint256 rewards = hMath.mulDiv(rate, usrDebt, 10 ** 27) - usrDebt; //$ amount
+        return hMath.mulDiv(rewards, helioPrice(), 10 ** 18); //helio tokens
+    }
+
+    function claim(uint256 amount) external {
+        require(amount <= pendingRewards(msg.sender), "Rewards/not-enough-rewards");
+        uint256 i = 0;
+        while (i < poolsList.length) {
+            drop(poolsList[i], msg.sender);
+            i++;
+        }
+        claimedRewards[msg.sender] += amount;
         Mintable(helioToken).mint(msg.sender, amount);
 
         emit Claimed(msg.sender, amount);
-    }
-
-    // Rewards pool update
-    function drip(bytes32 ilk) external poolInit {
-        require(block.timestamp >= ilks[ilk].rho, "Reward/invalid-now");
-        uint256 rate = hMath.rpow(ilks[ilk].rewardRate, block.timestamp - ilks[ilk].rho, ONE);
-        ilks[ilk].rho = block.timestamp;
-
-        (uint256 totalDebt,) = vat.ilks(poolIlk);
-        uint256 rewards = hMath.mulDiv(rate, totalDebt, 10 ** 27); //$ amount
-        rewardsPool += hMath.mulDiv(rewards , helioPrice(), 10 ** 18);
     }
 }

@@ -89,11 +89,8 @@ interface ClipperLike {
 }
 
 interface Rewards {
-    function helioPrice() external view returns(uint256);
-    function pendingRewards(address usr) external view returns(uint256);
-    function withDraw(address usr, uint256 dart) external;
-    function claim(address usr, uint256 amount) external;
-    function drip(bytes32 ilk) external;
+    function deposit(address token, address usr) external;
+    function withdraw(address token, address usr) external;
 }
 
 contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
@@ -260,6 +257,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         usbJoin.exit(participant, usbAmount);
 
 //        drip(token);
+        helioRewards.deposit(token, participant);
 
         emit Borrow(participant, usbAmount);
         return uint256(dart);
@@ -284,6 +282,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         if ((int256(rate * art) / 10**27) == dart) {
             EnumerableSet.remove(usersInDebt, participant);
         }
+
+        helioRewards.withdraw(token, participant);
+
         emit Payback(participant, usbAmount);
         return dart;
     }
@@ -311,7 +312,10 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         jug.drip(collateralType.ilk);
-        helioRewards.drip(collateralType.ilk);
+    }
+
+    function setRewards(address rewards) external auth {
+        helioRewards = Rewards(rewards);
     }
 
     //    /////////////////////////////////

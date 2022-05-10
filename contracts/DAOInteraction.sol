@@ -212,14 +212,13 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
+        drip(token);
         IERC20(token).transferFrom(participant, address(this), dink);
         collateralType.gem.join(participant, dink);
         vat.behalf(participant, address(this));
         vat.frob(collateralType.ilk, participant, participant, participant, int256(dink), 0);
 
         deposits[token] += dink;
-
-//        drip(token);
         EnumerableSet.add(usersInDebt, participant);
 
         emit Deposit(participant, dink);
@@ -246,6 +245,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
+        drip(token);
         (, uint256 rate,,,) = vat.ilks(collateralType.ilk);
         int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
         if (uint256(dart) * rate < usbAmount * (10 ** 27)) {
@@ -256,7 +256,6 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         vat.move(participant, address(this), usbAmount * ONE);
         usbJoin.exit(participant, usbAmount);
 
-//        drip(token);
         helioRewards.deposit(token, participant);
 
         emit Borrow(participant, usbAmount);

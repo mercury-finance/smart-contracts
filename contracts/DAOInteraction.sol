@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.10;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./hMath.sol";
-
-import "hardhat/console.sol";
 
 struct Sale {
     uint256 pos;  // Index in active array
@@ -37,7 +35,7 @@ interface VatLike {
 interface GemJoinLike {
     function join(address usr, uint wad) external;
     function exit(address usr, uint wad) external;
-    function gem() external view returns (IERC20);
+    function gem() external view returns (IERC20Upgradeable);
 }
 
 interface UsbGemLike {
@@ -45,7 +43,7 @@ interface UsbGemLike {
     function exit(address usr, uint wad) external;
 }
 
-interface UsbLike is IERC20 {
+interface UsbLike is IERC20Upgradeable {
 }
 
 interface PipLike {
@@ -126,7 +124,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     mapping (address => uint256) private deposits;
     mapping (address => CollateralType) private collaterals;
 
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     using EnumerableSet for EnumerableSet.AddressSet;
+
     EnumerableSet.AddressSet private usersInDebt;
 
     uint256 constant ONE = 10 ** 27;
@@ -180,7 +180,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     function setCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
         collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
-        IERC20(token).approve(gemJoin,
+        IERC20Upgradeable(token).approve(gemJoin,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
         vat.init(ilk);
         vat.rely(gemJoin);
@@ -188,13 +188,15 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     function enableCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
         collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
-        IERC20(token).approve(gemJoin,
+        IERC20Upgradeable(token).approve(gemJoin,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
         vat.rely(gemJoin);
     }
 
     function removeCollateralType(address token) external auth {
         collaterals[token].live = 0;
+        address gemJoin = address(collaterals[token].gem);
+        IERC20Upgradeable(token).approve(gemJoin, 0);
     }
 
     function stringToBytes32(string memory source) public pure returns (bytes32 result) {
@@ -213,7 +215,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         drip(token);
-        IERC20(token).transferFrom(participant, address(this), dink);
+        IERC20Upgradeable(token).safeTransferFrom(participant, address(this), dink);
         collateralType.gem.join(participant, dink);
         vat.behalf(participant, address(this));
         vat.frob(collateralType.ilk, participant, participant, participant, int256(dink), 0);
@@ -268,7 +270,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        usb.transferFrom(participant, address(this), usbAmount);
+        IERC20Upgradeable(usb).safeTransferFrom(participant, address(this), usbAmount);
         usbJoin.join(participant, usbAmount);
         (,uint256 rate,,,) = vat.ilks(collateralType.ilk);
         int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
@@ -299,6 +301,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             vat.frob(collateralType.ilk, participant, participant, participant, -diff, 0);
             vat.flux(collateralType.ilk, participant, address(this), uint256(diff));
         }
+        // Collateral is actually transferred back to user inside `exit` operation.
+        // See GemJoin.exit()
         collateralType.gem.exit(participant, dink);
         deposits[token] -= dink;
 
@@ -488,8 +492,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint usbMaxAmount = maxPrice * collateralAmount / RAY;
 
 
-        usb.transferFrom(msg.sender, address(this), usbMaxAmount);
-//        usb.approve(address(usbJoin), usbMaxAmount);
+        IERC20Upgradeable(usb).safeTransferFrom(msg.sender, address(this), usbMaxAmount);
         usbJoin.join(address(this), usbMaxAmount);
 
         vat.hope(address(collateral.clip));
@@ -501,8 +504,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         uint restUSB = usb.balanceOf(address(this)) - usbBalanceBefore;
         uint restGem = collateral.gem.gem().balanceOf(address(this)) - gemBalanceBefore;
-        usb.transfer(receiverAddress, restUSB);
-        collateral.gem.gem().transfer(receiverAddress, restGem);
+        IERC20Upgradeable(usb).safeTransfer(receiverAddress, restUSB);
+        collateral.gem.gem().safeTransfer(receiverAddress, restGem);
     }
 
     function getTotalAuctionsCountForToken(address token) public view returns (uint256) {

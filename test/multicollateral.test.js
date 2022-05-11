@@ -233,7 +233,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         expect(rewardPool.toString()).to.equal("0");
     });
 
-    xit('put collateral and borrow', async function () {
+    it('put collateral and borrow', async function () {
         // Approve and send some collateral inside. collateral value == 400 == `dink`
         let dink = ether("2").toString();
 
@@ -303,7 +303,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
     // DAI*(1 + fees%) --> Helio
     // MKR token <-- Helio (amount of MKR == stability fee)
 
-    xit('payback and withdraw', async function() {
+    it('payback and withdraw', async function() {
         //deposit&borrow
         let dink = ether("2").toString();
         await abnbc.connect(signer1).approve(interaction.address, dink);
@@ -349,7 +349,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         expect(s1Balance).to.equal(ether("4999").toString());
     });
 
-    xit('drip', async function() {
+    it('drip', async function() {
         //deposit&borrow
         let dink = ether("2").toString();
         await abnbc.connect(signer1).approve(interaction.address, dink);
@@ -382,7 +382,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         expect(borrowed.toString()).to.equal(dart);
     });
 
-    it('rewards', async function() {
+    xit('rewards', async function() {
         //deposit&borrow
         let dink = ether("2").toString();
         await abnbc.connect(signer1).approve(interaction.address, dink);

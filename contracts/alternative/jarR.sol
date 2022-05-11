@@ -19,11 +19,8 @@
 
 pragma solidity ^0.8.10;
 
-interface DSTokenLike {
-    function balanceOf(address) external returns(uint);
-    function transfer(address,uint) external;
-    function transferFrom(address,address,uint) external;
-}
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /*
    "Put rewards in the jar and close it".
@@ -37,6 +34,9 @@ interface DSTokenLike {
 */
 
 contract JarR {
+    // --- Wrapper ---
+    using SafeERC20 for IERC20;
+
     // --- Auth ---
     mapping (address => uint) public wards;
     function rely(address guy) external auth { wards[guy] = 1; }
@@ -64,9 +64,6 @@ contract JarR {
     mapping(address => uint) public redeemables;  // Capital + Rewards
     mapping(address => uint) public unstakeTime;  // Time of Unstake
 
-    address public vat;      // CDP Engine
-    address public vow;      // Vow Surplus
-    address public usbJoin;  // Usb Join
     uint    public live;     // Active Flag
 
     // --- Events ---
@@ -78,16 +75,13 @@ contract JarR {
     event Cage();
 
     // --- Init ---
-    constructor(address _USB, string memory _name, string memory _symbol, address _vat, address _vow) {
+    constructor(address _USB, string memory _name, string memory _symbol) {
         wards[msg.sender] = 1;
         live = 1;
 
         USB = _USB;
         name = _name;
         symbol = _symbol;
-
-        vat = _vat;
-        vow = _vow;
 
         ratio = 1e18;
     }
@@ -115,7 +109,7 @@ contract JarR {
     function replenish(uint wad) public update {
         usbDeposit += wad;
 
-        DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
+        IERC20(USB).safeTransferFrom(msg.sender, address(this), wad);
         emit Replenished(wad);
     } 
     function cage() external auth {
@@ -132,7 +126,7 @@ contract JarR {
         totalSupply += bal;
         usbDeposit += wad;
 
-        DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
+        IERC20(USB).safeTransferFrom(msg.sender, address(this), wad);
         emit Join(msg.sender, bal);
     }
     function exit(uint256 wad) public { // amount in hUSBs
@@ -157,7 +151,7 @@ contract JarR {
             uint256 redeemable = redeemables[accounts[i]];
             if (redeemable > 0) {
                 redeemables[accounts[i]] = 0;
-                DSTokenLike(USB).transfer(accounts[i], redeemable);
+                IERC20(USB).safeTransfer(accounts[i], redeemable);
             }
         }
 

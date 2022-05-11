@@ -11,7 +11,7 @@ const Interaction = artifacts.require('DAOInteraction');
 //The test will be updated on daily basis//
 ///////////////////////////////////////////
 
-xdescribe('===INTERACTION2-Multicollateral===', function () {
+describe('===INTERACTION2-Multicollateral===', function () {
     let deployer, signer1, signer2, mockVow;
 
     let vat,
@@ -125,7 +125,8 @@ xdescribe('===INTERACTION2-Multicollateral===', function () {
 
         await helio.connect(deployer).rely(rewards.address);
         await rewards.connect(deployer).setHelioToken(helio.address);
-        await rewards.connect(deployer).initPool(collateral, "1000000001847694957439350500"); //6%
+        await rewards.connect(deployer).initPool(abnbc.address, collateral, "1000000001847694957439350500"); //6%
+        await rewards.connect(deployer).rely(interaction.address);
 
         // Initialize External
         // 2.000000000000000000000000000 ($) * 0.8 (80%) = 1.600000000000000000000000000,
@@ -227,6 +228,9 @@ xdescribe('===INTERACTION2-Multicollateral===', function () {
 
         let borrowApr = await interaction.borrowApr(abnbc.address, {from: signer1.address});
         expect(borrowApr.toString()).to.equal("10000000069041365947");
+
+        let rewardPool = await rewards.rewardsPool();
+        expect(rewardPool.toString()).to.equal("0");
     });
 
     it('put collateral and borrow', async function () {
@@ -376,5 +380,37 @@ xdescribe('===INTERACTION2-Multicollateral===', function () {
 
         await interaction.borrowed(abnbc.address, signer1.address, {from: signer1.address});
         expect(borrowed.toString()).to.equal(dart);
+    });
+
+    xit('rewards', async function() {
+        //deposit&borrow
+        let dink = ether("2").toString();
+        await abnbc.connect(signer1).approve(interaction.address, dink);
+        await interaction.deposit(signer1.address, abnbc.address, dink, {from: signer1.address});
+        let dart = ether("200").toString();
+        await interaction.borrow(signer1.address, abnbc.address, dart, {from: signer1.address});
+
+        let claimable = await rewards.claimable(abnbc.address, signer1.address);
+        expect(claimable.toString()).to.equal("0");
+
+        let borrowed = await interaction.borrowed(abnbc.address, signer1.address, {from: signer1.address});
+        expect(borrowed.toString()).to.equal(dart);
+
+        await network.provider.send("evm_increaseTime", [31536000]); // Jump 1 Day
+        await network.provider.send("evm_increaseTime", [60]); // Jump 1 minute
+        await network.provider.send("evm_mine");
+
+        claimable = await rewards.claimable(abnbc.address, signer1.address);
+        expect(claimable.toString()).to.equal("120000235026811392660");
+
+        let totalPending = await rewards.pendingRewards(signer1.address);
+        expect(totalPending.toString()).to.equal("120000235026811392660");
+
+        await rewards.connect(signer1).claim(ether("60").toString());
+        let helioBalance = await helio.balanceOf(signer1.address);
+        expect(helioBalance.toString()).to.equal(ether("60").toString());
+
+        totalPending = await rewards.pendingRewards(signer1.address);
+        expect(totalPending.toString()).to.equal("60000238943925136690");
     });
 });

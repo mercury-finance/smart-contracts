@@ -13,7 +13,7 @@ const DATA = "0x02";
 //The test will be updated on daily basis//
 ///////////////////////////////////////////
 
-describe('===MVP1===', function () {
+xdescribe('===MVP1===', function () {
     let deployer, signer1, signer2, signer3;
 
     let vat,

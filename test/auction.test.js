@@ -26,7 +26,7 @@ const wad = ten.pow(18);
 const ray = ten.pow(27);
 const rad = ten.pow(45);
 
-describe("Auction", () => {
+xdescribe("Auction", () => {
   const networkSnapshotter = new NetworkSnapshotter();
 
   let deployer, signer1, signer2, signer3;

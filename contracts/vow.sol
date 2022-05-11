@@ -119,6 +119,7 @@ contract Vow {
             vat.hope(data);
         }
         else if (what == "flopper") flopper = FlopLike(data);
+        else if (what == "multisig") multisig = data;
         else revert("Vow/file-unrecognized-param");
     }
 

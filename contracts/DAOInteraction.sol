@@ -215,7 +215,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         drip(token);
-        IERC20Upgradeable(token).safeTransferFrom(participant, address(this), dink);
+        IERC20Upgradeable(token).safeTransferFrom(msg.sender, address(this), dink);
         collateralType.gem.join(participant, dink);
         vat.behalf(participant, address(this));
         vat.frob(collateralType.ilk, participant, participant, participant, int256(dink), 0);
@@ -303,7 +303,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         }
         // Collateral is actually transferred back to user inside `exit` operation.
         // See GemJoin.exit()
-        collateralType.gem.exit(participant, dink);
+        collateralType.gem.exit(msg.sender, dink);
         deposits[token] -= dink;
 
         emit Withdraw(participant, dink);

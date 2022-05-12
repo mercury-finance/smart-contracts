@@ -19,14 +19,14 @@ async function main() {
     console.log('Running deploy script');
 
     const Interaction = await hre.ethers.getContractFactory("DAOInteraction");
-
+    //
     // console.log('Force importing proxy');
     // await upgrades.forceImport(INTERACTION, Interaction);
 
     console.log("Preparing upgrade...");
-    const interactionV2 = await upgrades.prepareUpgrade(INTERACTION, Interaction);
-    console.log("interactionV2", interactionV2);
-    const upgraded = await upgrades.upgradeProxy(INTERACTION, Interaction);
+    const interactionV2 = await upgrades.prepareUpgrade(INTERACTION, Interaction, {kind: "uups"});
+    console.log("interactionV2 ", interactionV2);
+    const upgraded = await upgrades.upgradeProxy(INTERACTION, Interaction, {kind: "uups"});
     console.log("interactionV2 upgraded with ", upgraded.address);
 
     console.log('Validating code');

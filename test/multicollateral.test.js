@@ -271,7 +271,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         // User locked 2 aBNBc with price 400 and rate 0.8 == 640$ collateral worth
         // Borrowed 60$ => available should equal to 640 - 60 = 580.
         let available = await interaction.availableToBorrow(abnbc.address, signer1.address, {from: signer1.address});
-        expect(available.toString()).to.equal(ether("580").toString());
+        expect(available.toString()).to.equal("579999999999999999999");
 
         // 2 * 37.5 * 0.8 == 60$
         let liquidationPrice = await interaction.currentLiquidationPrice(abnbc.address, signer1.address, {from: signer1.address});
@@ -290,7 +290,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         await interaction.drip(abnbc.address, {from: signer1.address});
 
         availableYear = await interaction.availableToBorrow(abnbc.address, signer1.address, {from: signer1.address});
-        expect(availableYear.toString()).to.equal("573999997963879592051"); //roughly 10 percents less.
+        expect(availableYear.toString()).to.equal("573999999958575180431"); //roughly 10 percents less.
     });
 
     // 100 BNB -> Ankr

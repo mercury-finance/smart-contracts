@@ -19,8 +19,6 @@ interface Auction {
   clip: ethers.Contract;
   oracle: ethers.Contract;
   abacus: ethers.Contract;
-  tail: BigNumber;
-  cusp: BigNumber;
 }
 const tokenAddress = ABNBC;
 const collateral = toBytes32("aBNBc");
@@ -36,22 +34,6 @@ const PROVIDER_URL = process.env.PROVIDER_URL as string;
 const wsProvider = new ethers.providers.WebSocketProvider(PROVIDER_URL);
 const SENDER_PK = process.env.BUYER_PRIVATE_KEY as string;
 const wallet = new ethers.Wallet(SENDER_PK, wsProvider);
-
-const min = (num1: BigNumber, num2: BigNumber): BigNumber => {
-  return num1.lt(num2) ? num1 : num2;
-};
-
-const wmul = (num1: BigNumber, num2: BigNumber): BigNumber => {
-  return num1.mul(num2).div(wad);
-};
-
-const rdiv = (num1: BigNumber, num2: BigNumber): BigNumber => {
-  return num1.mul(ray).div(num2);
-};
-
-const toWad = (num: string) => {
-  return ethers.utils.parseUnits(num, 18);
-};
 
 const spotContract = new ethers.Contract(SPOT, SPOT_ABI, wallet);
 const dog = new ethers.Contract(DOG, DOG_ABI, wallet);
@@ -145,38 +127,30 @@ const main = async () => {
       allowance = BigNumber.from(allowance);
       const oracle = new ethers.Contract(spotIlk[0], ORACLE_ABI, wallet);
       const clip = new ethers.Contract(dogIlk[0], CLIP_ABI, wallet);
-      Promise.all([clip.calc(), clip.tail(), clip.cusp()]).then(
-        ([abacusAddress, tail, cusp]: [
-          abacusAddress: string,
-          tail: BigNumber,
-          cusp: BigNumber
-        ]) => {
-          const abacus = new ethers.Contract(abacusAddress, ABACUS_ABI, wallet);
-          if (allowance.lt(ethers.constants.MaxUint256)) {
-            usb
-              .approve(interaction.address, ethers.constants.MaxUint256)
-              .then(() => {
-                console.log("successful approve");
-              });
-          } else {
-            console.log("no need of approve");
-          }
-          clip.on("Kick", (id, top, tab, lot, usr, kpr, coin) => {
-            console.log(`Auction with id ${id.toString()} started`);
-
-            if (!auctions.has(id.toNumber())) {
-              auctions.set(id.toNumber(), {
-                id: BigNumber.from(id),
-                clip,
-                oracle,
-                abacus,
-                tail: BigNumber.from(tail),
-                cusp: BigNumber.from(cusp),
-              });
-            }
-          });
+      clip.calc().then((abacusAddress: string) => {
+        const abacus = new ethers.Contract(abacusAddress, ABACUS_ABI, wallet);
+        if (allowance.lt(ethers.constants.MaxUint256)) {
+          usb
+            .approve(interaction.address, ethers.constants.MaxUint256)
+            .then(() => {
+              console.log("successful approve");
+            });
+        } else {
+          console.log("no need of approve");
         }
-      );
+        clip.on("Kick", (id, top, tab, lot, usr, kpr, coin) => {
+          console.log(`Auction with id ${id.toString()} started`);
+
+          if (!auctions.has(id.toNumber())) {
+            auctions.set(id.toNumber(), {
+              id: BigNumber.from(id),
+              clip,
+              oracle,
+              abacus,
+            });
+          }
+        });
+      });
     }
   );
 };

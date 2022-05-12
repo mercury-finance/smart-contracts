@@ -7,8 +7,6 @@ const DOG_ABI = require("../../artifacts/contracts/dog.sol/Dog.json").abi;
 const VAT_ABI = require("../../artifacts/contracts/vat.sol/Vat.json").abi;
 const INTERACTION_ABI =
   require("../../artifacts/contracts/DAOInteraction.sol/DAOInteraction.json").abi;
-const ORACLE_ABI =
-  require("../../artifacts/contracts/mock/oracle.sol/Oracle.json").abi;
 
 const ten = BigNumber.from(10);
 const wad = ten.pow(18);
@@ -17,16 +15,6 @@ const rad = ten.pow(45);
 
 const PROVIDER_URL = "http://localhost:8545";
 
-// const CLIPPER_ADDRESSES = [CLIP];
-// const USER_ADDRESSES = [
-//   "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
-//   "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
-//   "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
-//   "0x90f79bf6eb2c4f870365e785982e1f101e93b906",
-//   "0x15d34aaf54267db7d7c367839aaf71a00a2c6a65",
-//   "0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc",
-//   "0x976ea74026e726554db657fa54763abd0c3a0aa9",
-// ];
 const wsProvider = new ethers.providers.WebSocketProvider(PROVIDER_URL);
 const SENDER_PK = process.env.DEPLOYER_PRIVATE_KEY as string;
 const wallet = new ethers.Wallet(SENDER_PK, wsProvider);

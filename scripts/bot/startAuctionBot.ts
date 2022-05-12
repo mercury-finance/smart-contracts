@@ -13,7 +13,7 @@ const wad = ten.pow(18);
 const ray = ten.pow(27);
 const rad = ten.pow(45);
 
-const PROVIDER_URL = "http://localhost:8545";
+const PROVIDER_URL = process.env.PROVIDER_URL as string;
 
 const wsProvider = new ethers.providers.WebSocketProvider(PROVIDER_URL);
 const SENDER_PK = process.env.DEPLOYER_PRIVATE_KEY as string;

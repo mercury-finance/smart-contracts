@@ -38,6 +38,7 @@ interface FlapLike {
 interface VatLike {
     function usb (address) external view returns (uint);
     function sin (address) external view returns (uint);
+    function move(address src, address dst, uint256 rad) external;
     function heal(uint256) external;
     function hope(address) external;
     function nope(address) external;
@@ -54,9 +55,10 @@ contract Vow {
     }
 
     // --- Data ---
-    VatLike public vat;        // CDP Engine
-    FlapLike public flapper;   // Surplus Auction House
-    FlopLike public flopper;   // Debt Auction House
+    VatLike public vat;          // CDP Engine
+    FlapLike public flapper;     // Surplus Auction House
+    FlopLike public flopper;     // Debt Auction House
+    address public multisig;     // Surplus multisig 
 
     mapping (uint256 => uint256) public sin;  // debt queue
     uint256 public Sin;   // Queued debt            [rad]
@@ -69,14 +71,17 @@ contract Vow {
     uint256 public bump;  // Flap fixed lot size    [rad]
     uint256 public hump;  // Surplus buffer         [rad]
 
+    uint256 public lever; // 0-Multisig, 1-Flapper
+
     uint256 public live;  // Active Flag
 
     // --- Init ---
-    constructor(address vat_, address flapper_, address flopper_) {
+    constructor(address vat_, address flapper_, address flopper_, address multisig_) {
         wards[msg.sender] = 1;
         vat     = VatLike(vat_);
         flapper = FlapLike(flapper_);
         flopper = FlopLike(flopper_);
+        multisig = multisig_;
         vat.hope(flapper_);
         live = 1;
     }
@@ -103,6 +108,7 @@ contract Vow {
         else if (what == "sump") sump = data;
         else if (what == "dump") dump = data;
         else if (what == "hump") hump = data;
+        else if (what == "lever") lever = data;
         else revert("Vow/file-unrecognized-param");
     }
 
@@ -148,19 +154,18 @@ contract Vow {
         Ash = add(Ash, sump);
         id = flopper.kick(address(this), dump, sump);
     }
-    // Surplus auction
+    // Surplus auction or send surplus to multisig
     function flap() external returns (uint id) {
-        require(vat.usb(address(this)) >= add(add(vat.sin(address(this)), bump), hump), "Vow/insufficient-surplus");
-        require(sub(sub(vat.sin(address(this)), Sin), Ash) == 0, "Vow/debt-not-zero");
-        id = flapper.kick(bump, 0);
-    }
-
-    // Jar Farming
-    function permit(address jar, uint8 permit_) external auth {
-        if (permit_ == 1)
-            vat.hope(jar);
-        else
-            vat.nope(jar);
+        if (lever != 0) {
+            require(vat.usb(address(this)) >= add(add(vat.sin(address(this)), bump), hump), "Vow/insufficient-surplus");
+            require(sub(sub(vat.sin(address(this)), Sin), Ash) == 0, "Vow/debt-not-zero");
+            id = flapper.kick(bump, 0);
+        } else { 
+            require(vat.usb(address(this)) >= add(vat.sin(address(this)), hump), "Vow/insufficient-surplus");
+            require(sub(vat.sin(address(this)), Sin) == 0, "Vow/debt-not-zero");
+            uint rad = sub(vat.usb(address(this)), add(vat.sin(address(this)), hump));
+            vat.move(address(this), multisig, rad);
+        }
     }
 
     function cage() external auth {

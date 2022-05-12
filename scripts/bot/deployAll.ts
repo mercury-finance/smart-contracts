@@ -109,7 +109,8 @@ const main = async () => {
   const vow = await Vow.connect(deployer).deploy(
     vat.address,
     flap.address,
-    flop.address
+    flop.address,
+    "0xbcd4042de499d14e55001ccbb24a551f3b954096"
   );
   await vow.deployed();
 
@@ -118,7 +119,6 @@ const main = async () => {
     "hUSB",
     vat.address,
     vow.address,
-    usbJoin.address
   );
   await jar.deployed();
 
@@ -300,6 +300,10 @@ const main = async () => {
   await vow.connect(deployer).rely(dog.address);
   await vow.connect(deployer).rely(flop.address);
   console.log("vow config completed");
+
+  // configure helioReward
+  await helioRewards.connect(deployer).rely(interaction.address);
+  console.log("helioRewards config completed");
 
   // const vat = await ethers.getContractAt("Vat", VAT);
   // const spot = await ethers.getContractAt("Spotter", SPOT);

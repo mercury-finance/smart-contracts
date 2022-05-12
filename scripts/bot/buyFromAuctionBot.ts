@@ -30,7 +30,7 @@ const wad = ten.pow(18);
 const ray = ten.pow(27);
 const rad = ten.pow(45);
 
-const PROVIDER_URL = "http://localhost:8545";
+const PROVIDER_URL = process.env.PROVIDER_URL as string;
 // const PROVIDER_URL = "https://data-seed-prebsc-1-s1.binance.org:8545/";
 
 const wsProvider = new ethers.providers.WebSocketProvider(PROVIDER_URL);

@@ -74,7 +74,7 @@ xdescribe('===Jar===', function () {
         await vow.deployed();
 
         // Jar module 
-        jar = await this.Jar.connect(deployer).deploy("Helio USB", "hUSB", vat.address, vow.address);
+        jar = await this.Jar.connect(deployer).deploy("Helio USB", "hUSB");
         await jar.deployed();
 
         // Oracle module

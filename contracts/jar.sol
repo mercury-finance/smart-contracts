@@ -19,10 +19,8 @@
 
 pragma solidity ^0.8.10;
 
-interface DSTokenLike {
-    function transfer(address,uint) external;
-    function transferFrom(address,address,uint) external;
-}
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /*
    "Put rewards in the jar and close it".
@@ -33,7 +31,10 @@ interface DSTokenLike {
 */
 
 contract Jar {
-     // --- Auth ---
+    // --- Wrapper ---
+    using SafeERC20 for IERC20;
+
+    // --- Auth ---
     mapping (address => uint) public wards;
     function rely(address guy) external auth { wards[guy] = 1; }
     function deny(address guy) external auth { wards[guy] = 0; }
@@ -52,8 +53,8 @@ contract Jar {
     // --- Reward Data ---
     uint public spread;      // Distribution time     [sec]
     uint public endTime;     // Time "now" + spread   [sec]
-    uint public rate;        // Emission per second
-    uint public tps;         // USB tokens per share  
+    uint public rate;        // Emission per second   [wad]
+    uint public tps;         // USB tokens per share  [wad]
     uint public lastUpdate;  // Last tps update       [sec]
     uint public exitDelay;   // User unstake delay    [sec]
     address public USB;      // The USB Stable Coin
@@ -63,28 +64,24 @@ contract Jar {
     mapping(address => uint) public withdrawn;    // Capital withdrawn
     mapping(address => uint) public unstakeTime;  // Time of Unstake
 
-    address public vat;      // CDP Engine
-    address public vow;      // Vow Surplus
-    address public usbJoin;  // Usb Join
     uint    public live;     // Active Flag
 
     // --- Events ---
     event Initialized(address indexed token, uint indexed duration, uint indexed exitDelay);
     event Replenished(uint reward);
     event SpreadUpdated(uint newDuration);
+    event ExitDelayUpdated(uint exitDelay);
     event Join(address indexed user, uint indexed amount);
     event Exit(address indexed user, uint indexed amount);
     event Redeem(address[] indexed user);
     event Cage();
 
     // --- Init ---
-    constructor(string memory _name, string memory _symbol, address _vat, address _vow) {
+    constructor(string memory _name, string memory _symbol) {
         wards[msg.sender] = 1;
         live = 1;
         name = _name;
         symbol = _symbol;
-        vat = _vat;
-        vow = _vow;
     }
 
     // --- Math ---
@@ -124,11 +121,11 @@ contract Jar {
     function getRewardForDuration() external view returns (uint) {
         return rate * spread;
     }
-    function getAPR()external view returns (uint) {
+    function getAPR() external view returns (uint) {
         if(spread == 0 || totalSupply == 0) {
             return 0;
         }
-        return ((rate * 31536000) / totalSupply);
+        return ((rate * 31536000 * 1e18) / totalSupply) * 100;
     }
 
     // --- Administration ---
@@ -150,7 +147,7 @@ contract Jar {
         lastUpdate = block.timestamp;
         endTime = block.timestamp + spread;
 
-        DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
+        IERC20(USB).safeTransferFrom(msg.sender, address(this), wad);
         emit Replenished(wad);
     }
     function setSpread(uint _spread) external auth {
@@ -160,8 +157,8 @@ contract Jar {
         emit SpreadUpdated(_spread);
     }
     function setExitDelay(uint _exitDelay) external auth {
-        require(block.timestamp > endTime, "Jar/rewards-active");
         exitDelay = _exitDelay;
+        emit ExitDelayUpdated(_exitDelay);
     }
     function cage() external auth {
         live = 0;
@@ -175,7 +172,7 @@ contract Jar {
         balanceOf[msg.sender] += wad;
         totalSupply += wad;
 
-        DSTokenLike(USB).transferFrom(msg.sender, address(this), wad);
+        IERC20(USB).safeTransferFrom(msg.sender, address(this), wad);
         emit Join(msg.sender, wad);
     }
     function exit(uint256 wad) external update(msg.sender) {
@@ -201,7 +198,7 @@ contract Jar {
             if (_amount > 0) {
                 rewards[accounts[i]] = 0;
                 withdrawn[accounts[i]] = 0;
-                DSTokenLike(USB).transfer(accounts[i], _amount);
+                IERC20(USB).safeTransfer(accounts[i], _amount);
             }
         }
        

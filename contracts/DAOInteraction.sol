@@ -65,6 +65,10 @@ interface DogLike {
     function bark(bytes32 ilk, address urn, address kpr) external returns (uint256 id);
 }
 
+interface CeRouterLike {
+    function liquidation(address urn, address recipient, uint256 amount) external;
+}
+
 interface ClipperLike {
     function ilk() external view returns (bytes32);
     function kick(
@@ -132,6 +136,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 constant ONE = 10 ** 27;
     uint256 constant RAY = 10 ** 27;
 
+    mapping (address => address) public discs;  // e.g. Auction purchase from ceabnbc to abnbc
+
     function initialize(address vat_,
         address spot_,
         address usb_,
@@ -191,6 +197,10 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         IERC20Upgradeable(token).approve(gemJoin,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
         vat.rely(gemJoin);
+    }
+
+    function setCollateralDisc(address token, address disc) external auth { // address(0) means removal
+        discs[token] = disc;
     }
 
     function removeCollateralType(address token) external auth {
@@ -509,7 +519,14 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint restUSB = usb.balanceOf(address(this)) - usbBalanceBefore;
         uint restGem = collateral.gem.gem().balanceOf(address(this)) - gemBalanceBefore;
         IERC20Upgradeable(usb).safeTransfer(receiverAddress, restUSB);
-        collateral.gem.gem().safeTransfer(receiverAddress, restGem);
+
+        if (discs[token] != address(0)) {
+            address urn = collateral.clip.sales(auctionId).usr;
+            collateral.gem.gem().safeTransfer(discs[token], restGem);
+            CeRouterLike(discs[token]).liquidation(urn, receiverAddress, restGem);
+        } else {
+            collateral.gem.gem().safeTransfer(receiverAddress, restGem);
+        }
     }
 
     function getTotalAuctionsCountForToken(address token) public view returns (uint256) {

@@ -1,5 +1,10 @@
 import { ethers, BigNumber } from "ethers";
-import { SPOT, DOG, VAT, INTERACTION } from "./addresses.json";
+// import { SPOT, DOG, VAT, INTERACTION } from "./addresses.json";
+
+const VAT = "0x2aD101ddFdF7db7EDE1fF41a6D4299d01365f08a";
+const SPOT = "0x617c086cA4a0AD213d9104258014cE49D02AF5FB";
+const INTERACTION = "0xA2bDF14E2662d98E456B9124F39a5DfF6218D18a";
+const DOG = "0xAb8b59F2574a1167BD12AE5760B9Ba960f253049";
 
 const CLIP_ABI = require("../../artifacts/contracts/clip.sol/Clipper.json").abi;
 const SPOT_ABI = require("../../artifacts/contracts/spot.sol/Spotter.json").abi;
@@ -14,9 +19,10 @@ const ray = ten.pow(27);
 const rad = ten.pow(45);
 
 const PROVIDER_URL = process.env.PROVIDER_URL as string;
+console.log(PROVIDER_URL);
 
 const wsProvider = new ethers.providers.WebSocketProvider(PROVIDER_URL);
-const SENDER_PK = process.env.DEPLOYER_PRIVATE_KEY as string;
+const SENDER_PK = process.env.BUYER_PRIVATE_KEY as string;
 const wallet = new ethers.Wallet(SENDER_PK, wsProvider);
 
 const min = (num1: BigNumber, num2: BigNumber): BigNumber => {
@@ -32,13 +38,16 @@ const toWad = (num: string) => {
 };
 
 const main = async () => {
-  const BNB_PRICE = BigNumber.from(toWad("300"));
+  const BNB_PRICE = BigNumber.from(toWad("0.1"));
   const GAS_LIMIT = BigNumber.from("500000");
 
   const spotContract = new ethers.Contract(SPOT, SPOT_ABI, wallet);
   const dog = new ethers.Contract(DOG, DOG_ABI, wallet);
   const vat = new ethers.Contract(VAT, VAT_ABI, wallet);
   const interaction = new ethers.Contract(INTERACTION, INTERACTION_ABI, wallet);
+  console.log("start");
+  let nonce = await wallet.getTransactionCount();
+  console.log("nonce is:", nonce);
   spotContract.on("Poke", (ilk, val, spot) => {
     console.log("Poke event triggered");
     Promise.all([
@@ -55,6 +64,8 @@ const main = async () => {
         vatIlk: Array<any>,
         userAddresses: Array<string>
       ]) => {
+        console.log(userAddresses);
+
         Hole = BigNumber.from(Hole);
         Dirt = BigNumber.from(Dirt);
         const clip = new ethers.Contract(dogIlk[0], CLIP_ABI, wallet);
@@ -68,6 +79,7 @@ const main = async () => {
             chip = BigNumber.from(chip);
             for (const userAddress of userAddresses) {
               vat.urns(ilk, userAddress).then((urn: any) => {
+                console.log("user address:", userAddress);
                 const ink = BigNumber.from(urn[0]);
                 const art = BigNumber.from(urn[1]);
                 const rate = BigNumber.from(vatIlk[1]);
@@ -95,10 +107,11 @@ const main = async () => {
                     .mul(BNB_PRICE)
                     .div(wad);
                   if (txCost.lt(usbIncentiveAmount)) {
-                    console.log("Starting Auction!");
+                    console.log("Starting Auction with nonce:", nonce);
                     dog
                       .bark(ilk, userAddress, wallet.address, {
                         gasLimit: GAS_LIMIT,
+                        nonce: nonce++,
                       })
                       .then((tx: ethers.providers.TransactionResponse) => {
                         console.log("Transaction sended");
@@ -106,8 +119,22 @@ const main = async () => {
                       })
                       .then((tx: ethers.providers.TransactionReceipt) => {
                         console.log("Transaction hash is:", tx.transactionHash);
+                      })
+                      .catch((err: any) => {
+                        console.log("Error!!");
+                        console.log(
+                          "_________________________________________"
+                        );
+                        console.log(err);
+                        console.log(
+                          "_________________________________________"
+                        );
                       });
+                  } else {
+                    console.log("unprofitable");
                   }
+                } else {
+                  console.log("cannot call");
                 }
               });
             }

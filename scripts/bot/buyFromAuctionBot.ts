@@ -1,5 +1,10 @@
 import { ethers, BigNumber } from "ethers";
-import { SPOT, DOG, INTERACTION, USB, ABNBC } from "./addresses.json";
+// import { SPOT, DOG, INTERACTION, USB, ABNBC } from "./addresses.json";
+
+const SPOT = "0x617c086cA4a0AD213d9104258014cE49D02AF5FB";
+const USB = "0x86A6bdb0101051a0F5FeeD0941055Bca74F21D6C";
+const INTERACTION = "0xA2bDF14E2662d98E456B9124F39a5DfF6218D18a";
+const DOG = "0xAb8b59F2574a1167BD12AE5760B9Ba960f253049";
 
 const toBytes32 = ethers.utils.formatBytes32String;
 
@@ -20,8 +25,9 @@ interface Auction {
   oracle: ethers.Contract;
   abacus: ethers.Contract;
 }
-const tokenAddress = ABNBC;
-const collateral = toBytes32("aBNBc");
+const tokenAddress = "0x51b9eFaB9C8D1ba25C76d3636b3E5784abD65dfC";
+// const collateral = toBytes32("aBNBc");
+const collateral = toBytes32("ceToken");
 
 const ten = BigNumber.from(10);
 const wad = ten.pow(18);
@@ -103,6 +109,13 @@ setInterval(() => {
             .then((tx: ethers.providers.TransactionReceipt) => {
               pendingTxExist = false;
               console.log("Transaction hash is:", tx.transactionHash);
+            })
+            .catch((err: any) => {
+              pendingTxExist = false;
+              console.log("Error!!");
+              console.log("_________________________________________");
+              console.log(err);
+              console.log("_________________________________________");
             });
         } else if (needsRedo || lot.isZero()) {
           console.log("removing auction");
@@ -124,6 +137,10 @@ const main = async () => {
       dogIlk: Array<any>,
       allowance: BigNumber
     ]) => {
+      console.log(spotIlk[0]);
+      console.log(dogIlk[0]);
+      
+      
       allowance = BigNumber.from(allowance);
       const oracle = new ethers.Contract(spotIlk[0], ORACLE_ABI, wallet);
       const clip = new ethers.Contract(dogIlk[0], CLIP_ABI, wallet);

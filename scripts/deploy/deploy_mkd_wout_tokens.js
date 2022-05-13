@@ -4,7 +4,7 @@ const { VAT, SPOT, aBNBc,
     USB,
     UsbJoin,
     aBNBcJoin,
-    REAL_ABNBC,
+    REAL_ABNBC, ceBNBc,
     NATIVE_TOKEN_ADDRESS, DOG
 } = require('../../addresses.json');
 const {ethers} = require("hardhat");
@@ -15,7 +15,7 @@ async function main() {
 
     let collateral = ethers.utils.formatBytes32String("aBNBc");
     let collateral2 = ethers.utils.formatBytes32String("REALaBNBc");
-    let collateral3 = ethers.utils.formatBytes32String("BNB");
+    let collateral3 = ethers.utils.formatBytes32String("ceABNBc");
 
     this.Vat = await hre.ethers.getContractFactory("Vat");
     this.Spot = await hre.ethers.getContractFactory("Spotter");
@@ -60,9 +60,9 @@ async function main() {
     await abnbcJoin2.deployed();
     console.log("abnbcJoin2 deployed to:", abnbcJoin2.address);
 
-    // const bnbJoin = await this.GemJoin.deploy(vat.address, collateral3, NATIVE_TOKEN_ADDRESS);
-    // await bnbJoin.deployed();
-    // console.log("bnbJoin deployed to:", bnbJoin.address);
+    const bnbJoin = await this.GemJoin.deploy(vat.address, collateral3, ceBNBc);
+    await bnbJoin.deployed();
+    console.log("bnbJoin deployed to:", bnbJoin.address);
 
     // const oracle = await this.Oracle.deploy();
     // await oracle.deployed();
@@ -101,6 +101,9 @@ async function main() {
     const clip2 = await this.Clip.deploy(vat.address, spot.address, dog.address, collateral2);
     await clip2.deployed();
     console.log("Clip2 deployed to:", clip2.address);
+    const clip3 = await this.Clip.deploy(vat.address, spot.address, dog.address, collateral3);
+    await clip3.deployed();
+    console.log("Clip3 deployed to:", clip3.address);
 
     console.log('Validating code');
     await hre.run("verify:verify", {
@@ -155,14 +158,14 @@ async function main() {
             REAL_ABNBC
         ],
     });
-    // await hre.run("verify:verify", {
-    //     address: bnbJoin.address,
-    //     constructorArguments: [
-    //         vat.address,
-    //         collateral3,
-    //         NATIVE_TOKEN_ADDRESS,
-    //     ],
-    // });
+    await hre.run("verify:verify", {
+        address: bnbJoin.address,
+        constructorArguments: [
+            vat.address,
+            collateral3,
+            ceBNBc,
+        ],
+    });
 
     await hre.run("verify:verify", {
         address: jug.address,

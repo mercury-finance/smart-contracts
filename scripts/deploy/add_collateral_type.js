@@ -21,36 +21,41 @@ let wad = "000000000000000000", // 18 Decimals
 async function main() {
     console.log('Running deploy script');
 
-    let newCollateral = ethers.utils.formatBytes32String("ceToken");
+    // let newCollateral = ethers.utils.formatBytes32String("ceToken");
+    let newCollateral = ethers.utils.formatBytes32String("ceABNBc");
     console.log("CeToken ilk: " + newCollateral);
 
-    let tokenAddress = "0x51b9eFaB9C8D1ba25C76d3636b3E5784abD65dfC";
+    // let tokenAddress = "0x51b9eFaB9C8D1ba25C76d3636b3E5784abD65dfC";
     // let tokenAddress = "0xCa33FBAb46a05D7f8e3151975543a3a1f7463F63";
+    let tokenAddress = "0x90c15Cd33f7B3b7dadCa7653419b493ABfC7B850";
 
     this.Vat = await hre.ethers.getContractFactory("Vat");
     this.Clip = await hre.ethers.getContractFactory("Clipper");
     this.Interaction = await hre.ethers.getContractFactory("DAOInteraction");
     this.GemJoin = await hre.ethers.getContractFactory("GemJoin");
     this.Spot = await hre.ethers.getContractFactory("Spotter");
-    //
-    // const clip = await this.Clip.deploy(VAT, SPOT, DOG, newCollateral);
-    // await clip.deployed();
-    // console.log("Clip deployed to:", clip.address);
-    //
-    // const tokenJoin = await this.GemJoin.deploy(VAT, newCollateral, tokenAddress);
-    // await tokenJoin.deployed();
-    // console.log("tokenJoin deployed to:", tokenJoin.address);
 
-    // let interaction = this.Interaction.attach(INTERACTION);
+    const clip = await this.Clip.deploy(VAT, SPOT, DOG, newCollateral);
+    await clip.deployed();
+    console.log("Clip deployed to:", clip.address);
 
-    // await interaction.setCollateralType(tokenAddress, tokenJoin.address, newCollateral, clip.address);
+    const tokenJoin = await this.GemJoin.deploy(VAT, newCollateral, tokenAddress);
+    await tokenJoin.deployed();
+    console.log("tokenJoin deployed to:", tokenJoin.address);
+
+    // let tokenJoin = "0x5566bCc1e8CaCE6A8B924644C0CFFF5715F72ddb";
+    // let clip = "0xca75156174114eAd8bd9dF1F50E894334041029b";
+
+    let interaction = this.Interaction.attach(INTERACTION);
+
+    await interaction.setCollateralType(tokenAddress, tokenJoin, newCollateral, clip);
+
+    await interaction.setCollateralType(tokenAddress, tokenJoin.address, newCollateral, clip.address);
     // await interaction.enableCollateralType(tokenAddress, tokenJoin.address, newCollateral, clip.address);
 
     let vat = this.Vat.attach(VAT);
 
-
-    await vat.rely("0x240A27C5de2bd724bbD0ACB506c2EDF7c491ed96");
-    // await vat.rely(tokenJoin.address);
+    await vat.rely(tokenJoin.address);
     await vat["file(bytes32,bytes32,uint256)"](newCollateral, ethers.utils.formatBytes32String("line"), "50000000" + rad);
     await vat["file(bytes32,bytes32,uint256)"](newCollateral, ethers.utils.formatBytes32String("dust"), "100000000000000000" + ray);
 
@@ -65,6 +70,10 @@ async function main() {
 
     // Clip deployed to: 0xa2f1Fd3f2d84C4cee7F503c4e8a471990343e28d
     // tokenJoin deployed to: 0x240A27C5de2bd724bbD0ACB506c2EDF7c491ed96
+
+    // Clip deployed to: 0xca75156174114eAd8bd9dF1F50E894334041029b
+    // tokenJoin deployed to: 0x5566bCc1e8CaCE6A8B924644C0CFFF5715F72ddb
+
 
     console.log('Finished');
 }

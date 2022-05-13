@@ -2,7 +2,7 @@ const hre = require("hardhat");
 
 const {
     REAL_ABNBC, ceBNBc, DEPLOYER
-} = require('../../addresses.json');
+} = require('../../addresses-stage.json');
 const {ethers} = require("hardhat");
 
 

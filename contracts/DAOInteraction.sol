@@ -215,7 +215,11 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         drip(token);
+        uint256 preBalance = IERC20Upgradeable(token).balanceOf(address(this));
         IERC20Upgradeable(token).safeTransferFrom(msg.sender, address(this), dink);
+        uint256 postBalance = IERC20Upgradeable(token).balanceOf(address(this));
+        require(preBalance + dink == postBalance, "Interaction/deposit-deflated");
+
         collateralType.gem.join(participant, dink);
         vat.behalf(participant, address(this));
         vat.frob(collateralType.ilk, participant, participant, participant, int256(dink), 0);

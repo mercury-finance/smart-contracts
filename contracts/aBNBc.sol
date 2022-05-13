@@ -7,7 +7,7 @@ contract aBNBc is ERC20 {
 
     address public owner;
 
-    constructor() ERC20("Custom TEST aBNBc", "FAKEaBNBc"){
+    constructor(string memory desc, string memory name) ERC20(desc, name){
         owner = msg.sender;
     }
 

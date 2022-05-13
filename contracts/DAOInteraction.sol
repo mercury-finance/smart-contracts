@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./hMath.sol";
+import "hardhat/console.sol";
 
 struct Sale {
     uint256 pos;  // Index in active array
@@ -66,7 +67,9 @@ interface DogLike {
 }
 
 interface CeRouterLike {
-    function liquidation(address urn, address recipient, uint256 amount) external;
+    function liquidation(address recipient, uint256 amount) external;
+    function daoBurn(address,uint256) external;
+    function daoMint(address,uint256) external;
 }
 
 interface ClipperLike {
@@ -83,7 +86,7 @@ interface ClipperLike {
         uint256 max,
         address who,
         bytes calldata data
-    ) external;
+    ) external returns(uint256);
     function kicks() external view returns (uint256);
     function count() external view returns (uint256);
     function list() external view returns (uint256[] memory);
@@ -232,7 +235,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         deposits[token] += dink;
         EnumerableSet.add(usersInDebt, participant);
-
+      
         emit Deposit(participant, dink);
         return dink;
     }
@@ -483,8 +486,15 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return (principal - ONE)/ (10 ** 7);
     }
 
-    function startAuction(address token, address user, address keeper) external returns (uint256) {
-        return dog.bark(collaterals[token].ilk, user, keeper);
+    function startAuction(address token, address user, address keeper) external returns (uint256 id) {
+        id = dog.bark(collaterals[token].ilk, user, keeper);
+
+        // Burn hBNB of the user who owns the ceaBNBc
+        if (discs[token] != address(0)) {
+            CollateralType memory collateral = collaterals[token];
+            uint256 lot = collateral.clip.sales(id).lot;
+            CeRouterLike(discs[token]).daoBurn(user, lot);
+        }
     }
 
     function buyFromAuction(
@@ -496,32 +506,50 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     ) external {
         CollateralType memory collateral = collaterals[token];
 
-        uint usbBalanceBefore = usb.balanceOf(address(this));
-        uint gemBalanceBefore = collateral.gem.gem().balanceOf(address(this));
+        // Balances before
+        uint usbBal = usb.balanceOf(address(this));
+        uint gemBal = collateral.gem.gem().balanceOf(address(this));
 
         uint usbMaxAmount = maxPrice * collateralAmount / RAY;
-
 
         IERC20Upgradeable(usb).safeTransferFrom(msg.sender, address(this), usbMaxAmount);
         usbJoin.join(address(this), usbMaxAmount);
 
         vat.hope(address(collateral.clip));
 
-        collateral.clip.take(auctionId, collateralAmount, maxPrice, address(this), "");
+        address urn = collateral.clip.sales(auctionId).usr;  // Liquidated address
+        // If any leftover remaining
+        uint256 leftover = collateral.clip.take(auctionId, collateralAmount, maxPrice, address(this), "");
 
         collateral.gem.exit(address(this), vat.gem(collateral.ilk, address(this)));
         usbJoin.exit(address(this), vat.usb(address(this)) / RAY);
 
-        uint restUSB = usb.balanceOf(address(this)) - usbBalanceBefore;
-        uint restGem = collateral.gem.gem().balanceOf(address(this)) - gemBalanceBefore;
-        IERC20Upgradeable(usb).safeTransfer(receiverAddress, restUSB);
-
+        usbBal = usb.balanceOf(address(this)) - usbBal; // RestUSBs
+        gemBal = collateral.gem.gem().balanceOf(address(this)) - gemBal; // RestGEMs
+        
+        IERC20Upgradeable(usb).safeTransfer(receiverAddress, usbBal);
+        buyFromAuctionHelper(urn, leftover, gemBal, receiverAddress, token, collateral);
+    }
+    function buyFromAuctionHelper(
+        address urn, 
+        uint256 leftover, 
+        uint256 gemBal, 
+        address receiverAddress, 
+        address token, 
+        CollateralType memory collateral
+    ) private {
         if (discs[token] != address(0)) {
-            address urn = collateral.clip.sales(auctionId).usr;
-            collateral.gem.gem().safeTransfer(discs[token], restGem);
-            CeRouterLike(discs[token]).liquidation(urn, receiverAddress, restGem);
+            collateral.gem.gem().safeTransfer(discs[token], gemBal);
+            CeRouterLike(discs[token]).liquidation(receiverAddress, gemBal); // Burn router ceToken and mint abnbc to receiver
+
+            if (leftover != 0) { // Auction ended with leftover
+                // CeRouterLike(discs[token]).daoMint(urn, leftover);
+                vat.flux(collateral.ilk, urn, address(this), leftover);
+                collateral.gem.exit(discs[token], leftover); // Router (disc) gets the remaining ceabnbc
+                CeRouterLike(discs[token]).liquidation(urn, leftover); // Router burns them and gives abnbc remaining
+            }
         } else {
-            collateral.gem.gem().safeTransfer(receiverAddress, restGem);
+            collateral.gem.gem().safeTransfer(receiverAddress, gemBal);
         }
     }
 

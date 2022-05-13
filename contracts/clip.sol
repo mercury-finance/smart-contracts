@@ -402,9 +402,8 @@ contract Clipper {
             // Do external call (if data is defined) but to be
             // extremely careful we don't allow to do it to the two
             // contracts which the Clipper needs to be authorized 
-            {
             // DogLike dog_ = dog;
-            if (data.length > 0 && who != address(vat) && who != address(DogLike(dog)))
+            if (data.length > 0 && who != address(vat) && who != address(DogLike(dog))) {
                 ClipperCallee(who).clipperCall(msg.sender, owe, slice, data);
             }
 

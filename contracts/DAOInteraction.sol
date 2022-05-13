@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./hMath.sol";
-import "hardhat/console.sol";
 
 struct Sale {
     uint256 pos;  // Index in active array
@@ -139,7 +138,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 constant ONE = 10 ** 27;
     uint256 constant RAY = 10 ** 27;
 
-    mapping (address => address) public discs;  // e.g. Auction purchase from ceabnbc to abnbc
+    // Target token kind for auction purchases
+    // If set, purchases change to disc token
+    mapping (address => address) public discs;
 
     function initialize(address vat_,
         address spot_,
@@ -489,7 +490,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function startAuction(address token, address user, address keeper) external returns (uint256 id) {
         id = dog.bark(collaterals[token].ilk, user, keeper);
 
-        // Burn hBNB of the user who owns the ceaBNBc
+        // Burn any derivative token (hBNB incase of ceabnbc collateral)
         if (discs[token] != address(0)) {
             CollateralType memory collateral = collaterals[token];
             uint256 lot = collateral.clip.sales(id).lot;
@@ -518,17 +519,18 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         vat.hope(address(collateral.clip));
 
         address urn = collateral.clip.sales(auctionId).usr;  // Liquidated address
-        // If any leftover remaining
+        // If any leftover remaining after liquidation
         uint256 leftover = collateral.clip.take(auctionId, collateralAmount, maxPrice, address(this), "");
 
         collateral.gem.exit(address(this), vat.gem(collateral.ilk, address(this)));
         usbJoin.exit(address(this), vat.usb(address(this)) / RAY);
 
-        usbBal = usb.balanceOf(address(this)) - usbBal; // RestUSBs
-        gemBal = collateral.gem.gem().balanceOf(address(this)) - gemBal; // RestGEMs
+        // Balances rest
+        usbBal = usb.balanceOf(address(this)) - usbBal;
+        gemBal = collateral.gem.gem().balanceOf(address(this)) - gemBal;
         
         IERC20Upgradeable(usb).safeTransfer(receiverAddress, usbBal);
-        buyFromAuctionHelper(urn, leftover, gemBal, receiverAddress, token, collateral);
+        buyFromAuctionHelper(urn, leftover, gemBal, receiverAddress, token, collateral); // Stack deep
     }
     function buyFromAuctionHelper(
         address urn, 

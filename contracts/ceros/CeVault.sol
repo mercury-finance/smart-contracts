@@ -21,9 +21,6 @@ contract CeVault is
 
     string private _name;
 
-    uint256 private _initRatio;
-    uint256 private _currentRatio;
-
     // Tokens
     ICertToken private _ceToken;
     ICertToken private _aBNBc;
@@ -54,7 +51,6 @@ contract CeVault is
         _name = name;
         _ceToken = ICertToken(ceTokenAddress);
         _aBNBc = ICertToken(aBNBcAddress);
-        _currentRatio = ICertToken(_aBNBc).ratio();
     }
 
     // deposit
@@ -64,8 +60,28 @@ contract CeVault is
         nonReentrant
         returns (uint256)
     {
+        uint256 ratio = _aBNBc.ratio();
         _aBNBc.transferFrom(msg.sender, address(this), amount);
-        uint256 toMint = (amount * 1e18) / _currentRatio;
+        uint256 toMint = (amount * 1e18) / ratio;
+        // add profit as other part of yield(yield includes profit before the first claim)
+        _depositors[msg.sender] += amount;
+        _ceTokenBalances[msg.sender] += toMint;
+        //  mint ceToken to recipient
+        ICertToken(_ceToken).mint(recipient, toMint);
+        emit Deposited(msg.sender, recipient, toMint);
+        return toMint;
+    }
+
+    // deposit
+    function depositFor(address recipient, uint256 amount)
+        external
+        override
+        nonReentrant
+        returns (uint256)
+    {
+        uint256 ratio = _aBNBc.ratio();
+        _aBNBc.transferFrom(msg.sender, address(this), amount);
+        uint256 toMint = (amount * 1e18) / ratio;
         // add profit as other part of yield(yield includes profit before the first claim)
         _depositors[recipient] += amount;
         _ceTokenBalances[recipient] += toMint;
@@ -79,9 +95,10 @@ contract CeVault is
         external
         override
         onlyRouter
+        nonReentrant
         returns (uint256)
     {
-        return claimYields(owner, recipient);
+        return _claimYields(owner, recipient);
     }
 
     // claimYields
@@ -91,36 +108,37 @@ contract CeVault is
         nonReentrant
         returns (uint256)
     {
-        return claimYields(msg.sender, recipient);
+        return _claimYields(msg.sender, recipient);
     }
 
-    function claimYields(address owner, address recipient)
+    function _claimYields(address owner, address recipient)
         private
         returns (uint256)
     {
         uint256 availableYields = this.getYieldFor(owner);
         require(availableYields > 0, "hasn't got yields to claim");
         // return back aBNBc to recipient
-        _aBNBc.transfer(recipient, availableYields);
         _claimed[owner] += availableYields;
-        // update profit -> 0
+        _aBNBc.transfer(recipient, availableYields);
         emit Claimed(owner, recipient, availableYields);
         return availableYields;
     }
 
-    // withdrawal
-    function withdrawal(address recipient, uint256 amount)
+    // withdraw
+    function withdraw(address recipient, uint256 amount)
         external
         override
         nonReentrant
         returns (uint256)
     {
-        uint256 realAmount = (amount * _currentRatio) / 1e18;
+        uint256 ratio = _aBNBc.ratio();
+        uint256 realAmount = (amount * ratio) / 1e18;
         require(
             _aBNBc.balanceOf(address(this)) >= realAmount,
             "not such amount in the vault"
         );
         uint256 balance = _ceTokenBalances[msg.sender];
+
         require(balance >= amount, "insufficient balance");
         _ceTokenBalances[msg.sender] -= amount;
         // burn ceToken from owner
@@ -131,9 +149,27 @@ contract CeVault is
         return realAmount;
     }
 
-    function updateRatio() external override {
-        _currentRatio = ICertToken(_aBNBc).ratio();
-        emit RatioUpdated(_currentRatio);
+    // withdraw
+    function withdrawFor(
+        address owner,
+        address recipient,
+        uint256 amount
+    ) external override nonReentrant onlyRouter returns (uint256) {
+        uint256 ratio = _aBNBc.ratio();
+        uint256 realAmount = (amount * ratio) / 1e18;
+        require(
+            _aBNBc.balanceOf(address(this)) >= realAmount,
+            "not such amount in the vault"
+        );
+        uint256 balance = _ceTokenBalances[owner];
+        require(balance >= amount, "insufficient balance");
+        _ceTokenBalances[owner] -= amount;
+        // burn ceToken from owner
+        ICertToken(_ceToken).burn(owner, amount);
+        _depositors[owner] -= realAmount;
+        _aBNBc.transfer(recipient, realAmount);
+        emit Withdrawn(msg.sender, recipient, realAmount);
+        return realAmount;
     }
 
     function getTotalAmountInVault() external view override returns (uint256) {
@@ -151,7 +187,8 @@ contract CeVault is
         override
         returns (uint256)
     {
-        return (_ceTokenBalances[account] * _currentRatio) / 1e18; // in aBNBc
+        uint256 ratio = _aBNBc.ratio();
+        return (_ceTokenBalances[account] * ratio) / 1e18; // in aBNBc
     }
 
     // yield = deposited*(1-current_ratio/init_ratio) = cetoken.balanceOf*init_ratio-cetoken.balanceOf*current_ratio
@@ -184,10 +221,6 @@ contract CeVault is
 
     function getClaimedOf(address account) external view returns (uint256) {
         return _claimed[account];
-    }
-
-    function ratio() external view override returns (uint256) {
-        return _currentRatio;
     }
 
     function changeRouter(address router) external onlyOwner {

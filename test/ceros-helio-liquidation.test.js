@@ -128,8 +128,8 @@
 //         await vat.connect(deployer).rely(jug.address);
 //         await vat.connect(deployer).rely(dog.address);
 //         await vat.connect(deployer).rely(clipceaBNBc.address);
-//         await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "2000" + rad); // Normalized USB
-//         await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "1200" + rad); // Normalized USB
+//         await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "3000" + rad); // Normalized USB
+//         await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "2200" + rad); // Normalized USB
 //         await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "500" + rad); // Normalized USB
 
 //         await spot.connect(deployer)["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("pip"), oracle.address);
@@ -237,18 +237,43 @@
 //         await dao.connect(deployer).enableCollateralType(cetoken.address, gemJoinC.address, collateral, clipceaBNBc.address);
 
 //         // Deposit via CeRouter
-//         await abnbc.connect(signer1).approve(cerouter.address,  ethers.utils.parseEther("400"))
+//         await abnbc.connect(signer1).approve(cerouter.address,  ethers.utils.parseEther("1400"))
 //         await abnbc.connect(signer2).approve(cerouter.address,  ethers.utils.parseEther("900"))
 
-//         await cerouter.connect(signer1).depositABNBc(ethers.utils.parseEther("400"));
+//         await cerouter.connect(signer1).depositABNBc(ethers.utils.parseEther("1400"));
 //         await cerouter.connect(signer2).depositABNBc(ethers.utils.parseEther("900"));
+
+//         // // Signer1 and Signer2 deposit via DAO
+//         // await cetoken.connect(signer1).approve(dao.address, ethers.utils.parseEther("400"));
+//         // await cetoken.connect(signer2).approve(dao.address, ethers.utils.parseEther("900"));
+//         // await dao.connect(signer1).deposit(signer1.address, cetoken.address, ethers.utils.parseEther("400"));
+//         // await dao.connect(signer2).deposit(signer2.address, cetoken.address, ethers.utils.parseEther("900"));
+        
+//         // // // Signer1 and Signer2 collateralize 400 and 900 respectively
+//         // // await vat.connect(signer1).frob(collateral, signer1.address, signer1.address, signer1.address, ethers.utils.parseEther("400"), 0); // 400 * 1.6$ = 640$ worth locked
+//         // // await network.provider.send("evm_mine");
+//         // // expect((await vat.connect(deployer).gem(collateral, signer1.address)).toString()).to.be.equal(await (ethers.utils.parseEther("0")).toString());
+//         // expect((await (await vat.connect(deployer).urns(collateral, signer1.address)).ink).toString()).to.be.equal(await (ethers.utils.parseEther("400")).toString());
+
+//         // // await vat.connect(signer2).frob(collateral, signer2.address, signer2.address, signer2.address, ethers.utils.parseEther("900"), 0); // 900 * 1.6$ = 1440$ worth locked
+//         // // await network.provider.send("evm_mine");
+//         // // expect((await vat.connect(deployer).gem(collateral, signer2.address)).toString()).to.be.equal(await (ethers.utils.parseEther("0")).toString());
+//         // expect((await (await vat.connect(deployer).urns(collateral, signer2.address)).ink).toString()).to.be.equal(await (ethers.utils.parseEther("900")).toString());
+        
+//         // // Signer1 and Signer2 borrow Usb respectively [Note: Can be done in a single frob collateralize and borrow]
+//         // // Note borrows should be less than "Line/line" and greater than "dust"
+//         // // Note "dart" parameter in the frob is normalized. dart = Usb amount / ilk.rate
+//         // expect((await vat.connect(signer1).usb(signer1.address)).toString()).to.be.equal("0");
+//         // expect((await vat.connect(signer1).debt()).toString()).to.be.equal("0");
+//         // expect((await (await vat.connect(signer1).urns(collateral, signer1.address)).art).toString()).to.be.equal("0");
+//         // expect((await (await vat.connect(signer1).ilks(collateral)).Art).toString()).to.be.equal("0");
                 
 //         // Normalized dart [wad] = amount in USB / ilk.rate
 //         let debt_rate = await (await vat.ilks(collateral)).rate;
-//         let usb_amount1 = (550000000000000000000 / debt_rate) * ONE;
+//         let usb_amount1 = (950000000000000000000 / debt_rate) * ONE;
 //         // console.log("HERE")
 //         // console.log(usb_amount1);
-//         let usb_amount2 = (600000000000000000000 / debt_rate) * ONE;
+//         let usb_amount2 = (550000000000000000000 / debt_rate) * ONE;
 
 //         await vat.connect(signer1).frob(collateral, signer1.address, signer1.address, signer1.address, 0, usb_amount1.toString()); // 550 USBs
 //         await vat.connect(signer2).frob(collateral, signer2.address, signer2.address, signer2.address, 0, usb_amount2.toString()); // 600 USBs
@@ -258,25 +283,29 @@
 //         // await expect(dog.connect(deployer).bark(collateral, signer2.address, signer3.address)).to.be.revertedWith("Dog/not-unsafe");
 
 //         // Oracle price decreases
-//         await oracle.connect(deployer).setPrice("600000000000000000");
+//         await oracle.connect(deployer).setPrice("700000000000000000");
 //         await spot.connect(deployer).poke(collateral);
+//         await dao.connect(deployer).setCollateralDisc(cetoken.address, cerouter.address);
+
+//         console.log("hBNB before auction start: " + await hBNB.balanceOf(signer2.address))
 
 //         await dao.connect(signer3).startAuction(cetoken.address, signer2.address, signer3.address)
+//         console.log("hBNB after auction start : " + await hBNB.balanceOf(signer2.address))
 
 //         console.log("BEFORE-BUYING");
 //         console.log("ceaBNBc: " + await cetoken.balanceOf(signer3.address));
 //         console.log("aBNBc  : " + await abnbc.balanceOf(signer3.address));
 
-//         await vat.connect(signer1).move(signer1.address, signer3.address, "50" + rad);
+//         await vat.connect(signer1).move(signer1.address, signer3.address, "950" + rad);
 //         await vat.connect(signer3).hope(usbJoin.address);
-//         await usbJoin.connect(signer3).exit(signer3.address, "50" + wad);
+//         await usbJoin.connect(signer3).exit(signer3.address, "950" + wad);
 
-//         await dao.connect(deployer).setCollateralDisc(cetoken.address, cerouter.address);
-
-//         await usb.connect(signer3).approve(dao.address, "50" + wad);
-//         console.log("hBNB before burn: " + await hBNB.balanceOf(signer2.address))
-//         await dao.connect(signer3).buyFromAuction(cetoken.address, 1, "3" + wad, "660000000000000000000000000", signer3.address);
-//         console.log("hBNB before burn: " + await hBNB.balanceOf(signer2.address))
+//         await usb.connect(signer3).approve(dao.address, "950" + wad);
+//         console.log("aBNBc balance of urn user before auction ends: " + await abnbc.balanceOf(signer2.address));
+//         console.log("hBNB before auction end: " + await hBNB.balanceOf(signer2.address))
+//         await dao.connect(signer3).buyFromAuction(cetoken.address, 1, "950" + wad, "800000000000000000000000000", signer3.address);
+//         console.log("hBNB after auction end : " + await hBNB.balanceOf(signer2.address))
+//         console.log("aBNBc balance of urn user after auction ends with leftover: " + await abnbc.balanceOf(signer2.address));
 
 //         console.log("AFTER-BUYING");
 //         console.log("ceaBNBc: " + await cetoken.balanceOf(signer3.address));

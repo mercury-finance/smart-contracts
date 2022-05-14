@@ -342,7 +342,7 @@ contract Clipper {
         uint256 max,          // Maximum acceptable price (USB / collateral) [ray]
         address who,          // Receiver of collateral and external call address
         bytes calldata data   // Data to pass in external call; if length 0, no call is done
-    ) external lock isStopped(3) {
+    ) external lock isStopped(3) returns(uint256 leftover) {
 
         address usr = sales[id].usr;
         uint96  tic = sales[id].tic;
@@ -401,9 +401,9 @@ contract Clipper {
 
             // Do external call (if data is defined) but to be
             // extremely careful we don't allow to do it to the two
-            // contracts which the Clipper needs to be authorized
-            DogLike dog_ = dog;
-            if (data.length > 0 && who != address(vat) && who != address(dog_)) {
+            // contracts which the Clipper needs to be authorized 
+            // DogLike dog_ = dog;
+            if (data.length > 0 && who != address(vat) && who != address(DogLike(dog))) {
                 ClipperCallee(who).clipperCall(msg.sender, owe, slice, data);
             }
 
@@ -411,20 +411,29 @@ contract Clipper {
             vat.move(msg.sender, vow, owe);
 
             // Removes Usb out for liquidation from accumulator
-            dog_.digs(ilk, lot == 0 ? tab + owe : owe);
+            DogLike(dog).digs(ilk, lot == 0 ? tab + owe : owe);
         }
 
+        leftover = takeHelper(lot, id, tab, usr);
+
+        emit Take(id, max, price, owe, tab, lot, usr);
+    }
+    function takeHelper(
+        uint256 lot, 
+        uint256 id, 
+        uint256 tab, 
+        address usr
+    ) private returns(uint256 leftover){
         if (lot == 0) {
             _remove(id);
         } else if (tab == 0) {
             vat.flux(ilk, address(this), usr, lot);
+            leftover = lot;  // Remaining amount after auction ends
             _remove(id);
         } else {
             sales[id].tab = tab;
             sales[id].lot = lot;
         }
-
-        emit Take(id, max, price, owe, tab, lot, usr);
     }
 
     function _remove(uint256 id) internal {

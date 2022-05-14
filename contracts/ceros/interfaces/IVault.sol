@@ -36,6 +36,10 @@ interface IVault {
         external
         returns (uint256);
 
+    function depositFor(address recipient, uint256 amount)
+        external
+        returns (uint256);
+
     function claimYields(address recipient) external returns (uint256);
 
     function claimYieldsFor(address owner, address recipient)
@@ -45,6 +49,12 @@ interface IVault {
     function withdraw(address recipient, uint256 amount)
         external
         returns (uint256);
+
+    function withdrawFor(
+        address owner,
+        address recipient,
+        uint256 amount
+    ) external returns (uint256);
 
     function getPrincipalOf(address account) external view returns (uint256);
 

@@ -62,4 +62,14 @@ interface IHelioProvider {
     function releaseInABNBc(address recipient, uint256 amount)
         external
         returns (uint256);
+
+    /**
+     * DAO FUNCTIONALITY
+     */
+
+    function liquidation(address recipient, uint256 amount) external;
+
+    function daoBurn(address account, uint256 value) external;
+
+    function daoMint(address account, uint256 value) external;
 }

@@ -33,10 +33,6 @@ contract CerosRouter is
 
     mapping(address => uint256) private _profits;
 
-    /**
-     * Modifiers
-     */
-
     function initialize(
         address certToken,
         address wBnbToken,
@@ -154,6 +150,7 @@ contract CerosRouter is
     // claim profit in aBNBc
     function claimProfit(address recipient) external nonReentrant {
         uint256 profit = _profits[msg.sender];
+        require(profit > 0, "has not got profit");
         // let's check balance of CeRouter in aBNBc
         require(
             _certToken.balanceOf(address(this)) >= profit,

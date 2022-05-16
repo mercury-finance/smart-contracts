@@ -27,13 +27,13 @@ contract HelioProvider is
     address private _operator;
 
     // Tokens
-    address private _certToken; // (default aBNBc)
+    address private _certToken;
     address private _ceToken;
     ICertToken private _collateralToken; // (default hBNB)
 
     ICerosRouter private _ceRouter;
     IDao private _dao;
-    IBinancePool private _pool; // (default BinancePool)
+    IBinancePool private _pool;
 
     /**
      * Modifiers
@@ -162,12 +162,31 @@ contract HelioProvider is
      * DAO FUNCTIONALITY
      */
 
-    function daoBurn(address urn, uint256 value) external onlyDao nonReentrant {
-        _collateralToken.burn(urn, value);
+    function liquidation(address recipient, uint256 amount)
+        external
+        override
+        onlyDao
+        nonReentrant
+    {
+        _ceRouter.withdrawABNBc(recipient, amount);
     }
 
-    function daoMint(address urn, uint256 value) external onlyDao nonReentrant {
-        _collateralToken.mint(urn, value);
+    function daoBurn(address account, uint256 value)
+        external
+        override
+        onlyDao
+        nonReentrant
+    {
+        _collateralToken.burn(account, value);
+    }
+
+    function daoMint(address account, uint256 value)
+        external
+        override
+        onlyDao
+        nonReentrant
+    {
+        _collateralToken.mint(account, value);
     }
 
     function _provideCollateral(address account, uint256 amount) internal {

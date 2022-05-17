@@ -127,7 +127,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         ClipperLike clip;
     }
 
-    mapping (address => uint256) private deposits;
+    mapping (address => uint256) public deposits;
     mapping (address => CollateralType) public collaterals;
 
     using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -258,7 +258,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
     }
 
-    function borrow(address participant, address token, uint256 usbAmount) external returns(uint256) {
+    function borrow(address token, uint256 usbAmount) external returns(uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
@@ -268,40 +268,40 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         if (uint256(dart) * rate < usbAmount * (10 ** 27)) {
             dart += 1; //ceiling
         }
-        vat.frob(collateralType.ilk, participant, participant, participant, 0, dart);
+        vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, dart);
         uint256 mulResult = rate * uint256(dart);
-        vat.move(participant, address(this), usbAmount * ONE);
-        usbJoin.exit(participant, usbAmount);
+        vat.move(msg.sender, address(this), usbAmount * ONE);
+        usbJoin.exit(msg.sender, usbAmount);
 
-        helioRewards.deposit(token, participant);
+        helioRewards.deposit(token, msg.sender);
 
-        emit Borrow(participant, usbAmount);
+        emit Borrow(msg.sender, usbAmount);
         return uint256(dart);
     }
 
     // Burn user's USB.
     // N.B. User collateral stays the same.
-    function payback(address participant, address token, uint256 usbAmount) external returns(int256) {
+    function payback(address token, uint256 usbAmount) external returns(int256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
-        IERC20Upgradeable(usb).safeTransferFrom(participant, address(this), usbAmount);
-        usbJoin.join(participant, usbAmount);
+        IERC20Upgradeable(usb).safeTransferFrom(msg.sender, address(this), usbAmount);
+        usbJoin.join(msg.sender, usbAmount);
         (,uint256 rate,,,) = vat.ilks(collateralType.ilk);
         int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
         if (uint256(dart) * rate < usbAmount * (10 ** 27)) {
             dart += 1; //ceiling
         }
-        vat.frob(collateralType.ilk, participant, participant, participant, 0, -dart);
+        vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, -dart);
 
-        (, uint256 art) = vat.urns(collateralType.ilk, participant);
+        (, uint256 art) = vat.urns(collateralType.ilk, msg.sender);
         if ((int256(rate * art) / 10**27) == dart) {
-            EnumerableSet.remove(usersInDebt, participant);
+            EnumerableSet.remove(usersInDebt, msg.sender);
         }
 
-        helioRewards.withdraw(token, participant);
+        helioRewards.withdraw(token, msg.sender);
 
-        emit Payback(participant, usbAmount);
+        emit Payback(msg.sender, usbAmount);
         return dart;
     }
 

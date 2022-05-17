@@ -10,7 +10,7 @@ const { VAT,
     REALOracle,
     JUG,
     Oracle,
-    VOW,
+    VOW, COLLATERAL_CE_ABNBC,
     INTERACTION, REAL_ABNBC, REWARDS, DOG
 } = require('../../addresses.json');
 const {ethers} = require("hardhat");
@@ -22,8 +22,7 @@ async function main() {
         ray = "000000000000000000000000000", // 27 Decimals
         rad = "000000000000000000000000000000000000000000000"; // 45 Decimals
 
-    let collateral = ethers.utils.formatBytes32String("aBNBc");
-    let collateral2 = ethers.utils.formatBytes32String("aBNBc2");
+    let collateral = ethers.utils.formatBytes32String(COLLATERAL_CE_ABNBC);
 
     this.Vat = await hre.ethers.getContractFactory("Vat");
     this.Spot = await hre.ethers.getContractFactory("Spotter");
@@ -34,63 +33,13 @@ async function main() {
     this.Jug = await hre.ethers.getContractFactory("Jug");
     this.Interaction = await hre.ethers.getContractFactory("DAOInteraction");
     this.Clip = await hre.ethers.getContractFactory("Clipper");
-    //
 
-    const abnbcJoin = await this.GemJoin.deploy(VAT, collateral, aBNBc);
-    await abnbcJoin.deployed();
-    console.log("abnbcJoin deployed to:", abnbcJoin.address);
+    let spot = this.Spot.attach(SPOT);
 
-    const clip1 = await this.Clip.deploy(VAT, SPOT, DOG, collateral);
-    await clip1.deployed();
-    console.log("Clip1 deployed to:", clip1.address);
-    // const clip2 = await this.Clip.deploy(VAT, SPOT, DOG, collateral2);
-    // await clip2.deployed();
-    // console.log("Clip2 deployed to:", clip2.address);
-    //
-    // console.log("Setting permissions");
+    await spot["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("pip"), Oracle);
+    await spot["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("mat"), "1333333333333333333333333333"); // Liquidation Ratio
 
-    // let oracle = this.Oracle.attach(Oracle);
-    // await oracle.setPrice("400" + wad); // 400$, mat = 80%, 400$ * 80% = 320$ With Safety Margin
-
-    // console.log("Vat...");
-
-    // let vat = this.Vat.attach(VAT);
-    // await vat.init(collateral);
-    // await vat.rely(aBNBcJoin);
-    // await vat.rely(INTERACTION);
-
-    let interaction = this.Interaction.attach(INTERACTION);
-    // console.log("Set cores");
-    // await interaction.setCores(
-    //     VAT,
-    //     SPOT,
-    //     UsbJoin,
-    //     JUG
-    // )
-    //
-    // console.log("Setting collaterals");
-    // await interaction.setCollateralType(aBNBc, aBNBcJoin, collateral, clip1.address);
-    // await interaction.setCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2, clip2.address);
-    // console.log("Enable collaterals");
-
-    // console.log(collateral);
-    await interaction.enableCollateralType(aBNBc, abnbcJoin.address, collateral, clip1.address);
-    // await interaction.enableCollateralType(REAL_ABNBC, REALaBNBcJoin, collateral2);
-    // console.log("Set rewards");
-    // await interaction.setHelioRewards(REWARDS);
-    // console.log("Drip");
-    // await interaction.drip(aBNBc);
-    // await interaction.drip(REAL_ABNBC);
-    // console.log('Finished');
-
-    // await hre.run("verify:verify", {
-    //     address: aBNBcJoin,
-    //     constructorArguments: [
-    //         VAT,
-    //         collateral,
-    //         aBNBc,
-    //     ],
-    // });
+    await spot.poke(collateral);
 }
 
 main()

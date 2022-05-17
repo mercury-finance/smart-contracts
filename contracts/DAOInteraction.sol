@@ -109,6 +109,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     event Borrow(address indexed user, uint256 amount);
     event Payback(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
+    event CollateralEnabled(address token, bytes32 ilk);
+    event CollateralDisabled(address token, bytes32 ilk);
 
     VatLike public vat;
     SpotLike public spotter;
@@ -126,7 +128,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     mapping (address => uint256) private deposits;
-    mapping (address => CollateralType) private collaterals;
+    mapping (address => CollateralType) public collaterals;
 
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -185,18 +187,16 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     function setCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
-        collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
-        IERC20Upgradeable(token).approve(gemJoin,
-            115792089237316195423570985008687907853269984665640564039457584007913129639935);
         vat.init(ilk);
-        vat.rely(gemJoin);
+        enableCollateralType(token, gemJoin, ilk, clip);
     }
 
-    function enableCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
+    function enableCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) public auth {
         collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
         IERC20Upgradeable(token).approve(gemJoin,
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
         vat.rely(gemJoin);
+        emit CollateralEnabled(token, ilk);
     }
 
     function setCollateralDisc(address token, address disc) external auth { // address(0) means removal
@@ -207,6 +207,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         collaterals[token].live = 0;
         address gemJoin = address(collaterals[token].gem);
         IERC20Upgradeable(token).approve(gemJoin, 0);
+        emit CollateralDisabled(token, collaterals[token].ilk);
     }
 
     function stringToBytes32(string memory source) public pure returns (bytes32 result) {

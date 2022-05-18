@@ -11,7 +11,6 @@ const { VAT,
     VOW,
     DOG,
     INTERACTION,
-    REWARDS,
     ABACI,
     CLIP3,
     COLLATERAL_CE_ABNBC,
@@ -45,7 +44,7 @@ async function main() {
     console.log("Setting permissions");
 
     let oracle = this.Oracle.attach(Oracle);
-    await oracle.setPrice("400" + wad); // 2$, mat = 80%, 2$ * 80% = 1.6$ With Safety Margin
+    // await oracle.setPrice("400" + wad); // 2$, mat = 80%, 2$ * 80% = 1.6$ With Safety Margin
 
     console.log("Vat rely...");
 
@@ -69,7 +68,6 @@ async function main() {
     await spot["file(bytes32,bytes32,uint256)"](collateral3, ethers.utils.formatBytes32String("mat"), "1250000000000000000000000000"); // Liquidation Ratio
 
     await spot["file(bytes32,uint256)"](ethers.utils.formatBytes32String("par"), "1" + ray); // It means pegged to 1$
-    await spot.poke(collateral3);
 
     console.log("Jug...");
     let BR = new BN("1000000003022266000000000000").toString(); //10% APY
@@ -116,6 +114,7 @@ async function main() {
     );
     console.log(collateral3);
     await interaction.setCollateralType(ceBNBc, ceBNBcJoin, collateral3, CLIP3);
+    await spot.poke(collateral3);
     await interaction.drip(ceBNBc);
 
     console.log('Finished');

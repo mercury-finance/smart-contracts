@@ -8,8 +8,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./hMath.sol";
 
-
-
     struct Sale {
         uint256 pos;  // Index in active array
         uint256 tab;  // Usb to raise       [rad]
@@ -157,8 +155,9 @@ contract Interaction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     EnumerableSet.AddressSet private usersInDebt;
 
-    uint256 constant ONE = 10 ** 27;
+    uint256 constant RAD = 10 ** 45;
     uint256 constant RAY = 10 ** 27;
+    uint256 constant YEAR = 365 * 24 * 3600; //seconds
 
     mapping(address => address) public discs;  // e.g. Auction purchase from ceabnbc to abnbc
 
@@ -312,7 +311,7 @@ contract Interaction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         }
         vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, dart);
         uint256 mulResult = rate * uint256(dart);
-        vat.move(msg.sender, address(this), usbAmount * ONE);
+        vat.move(msg.sender, address(this), usbAmount * RAY);
         usbJoin.exit(msg.sender, usbAmount);
 
         helioRewards.drop(token, msg.sender);
@@ -544,8 +543,8 @@ contract Interaction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (uint256 duty,) = jug.ilks(collateralType.ilk);
-        uint256 principal = hMath.rpow((jug.base() + duty), 31536000, ONE);
-        return (principal - ONE) / (10 ** 7);
+        uint256 principal = hMath.rpow((jug.base() + duty), YEAR, RAY);
+        return (principal - RAY) / (10 ** 7);
     }
 
     function startAuction(address token, address user, address keeper) external returns (uint256) {

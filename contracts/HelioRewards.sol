@@ -23,7 +23,7 @@ interface MCDOracle {
     function peek() external view returns (bytes32, bool);
 }
 
-interface Oracle {
+interface HelioTokenOracle {
     function peek() external view returns (uint256);
 }
 
@@ -74,7 +74,7 @@ contract HelioRewards {
 
     VatLike                  public vat; // CDP engine
     address public helioToken;
-    Oracle public oracle;
+    HelioTokenOracle public oracle;
 
     uint256 public rewardsPool;
 
@@ -98,7 +98,7 @@ contract HelioRewards {
     }
 
     function setOracle(address oracle_) external auth {
-        oracle = Oracle(oracle_);
+        oracle = HelioTokenOracle(oracle_);
     }
 
     function setRate(address token, uint256 newRate) external auth {

@@ -41,7 +41,8 @@ async function main() {
         initializer: "initialize"
     });
 
-    await interactionNew.setRewards(rewards.address);
+    // await interactionNew.setRewards(rewards.address);
+    await interactionNew.setRewards(REWARDS);
 
     let vat = this.VAT.attach(VAT);
     this.UsbFactory = await ethers.getContractFactory("Usb");
@@ -72,19 +73,22 @@ async function main() {
     //     params: ["0x37a7d129df800a4c75d13b2d94e1afc024a54fed"],
     // });
     // const signer = await ethers.getSigner("0x37a7d129df800a4c75d13b2d94e1afc024a54fed")
+    let usbBalance1 = await vat.usb("0x73CF7cC1778a60d43Ca2833F419B77a76177156A");
+    console.log("1: " + usbBalance1);
 
     let interaction = this.Interaction.attach(INTERACTION);
+
     await interaction.connect(signerDeployer).borrow(
         ceBNBc,
-        "200000000000000000000")
+        "100000000000000000000")
 
     let usbBalance = await vat.usb("0x73CF7cC1778a60d43Ca2833F419B77a76177156A");
     console.log(usbBalance);
 
-    await usb.connect(signerDeployer).approve(interaction.address, "5000000000000000000");
+    await usb.connect(signerDeployer).approve(interaction.address, "100000000000000000000");
     await interaction.connect(signerDeployer).payback(
         "0x24308Ca3B62129D51ecfA99410d6B59e0E6c7bfD",
-        "5000000000000000000")
+        "100000000000000000000")
 
     // await interaction.connect(signerDeployer).withdraw(
     //     "0x24308Ca3B62129D51ecfA99410d6B59e0E6c7bfD",

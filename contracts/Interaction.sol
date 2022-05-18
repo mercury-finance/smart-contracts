@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./hMath.sol";
 
 
-import "hardhat/console.sol";
 
     struct Sale {
         uint256 pos;  // Index in active array
@@ -116,7 +115,7 @@ interface Rewards {
     function drop(address token, address usr) external;
 }
 
-contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
+contract Interaction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     mapping(address => uint) public wards;
 
@@ -337,12 +336,6 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             dart += 1;
             //ceiling
         }
-        console.log("Dart is:");
-        console.logInt(- dart);
-        console.log("Ilk.rate: %s", rate);
-        console.log("Dtab is:");
-        console.logInt(- dart * int256(rate));
-
         vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, - dart);
 
         (, uint256 art) = vat.urns(collateralType.ilk, msg.sender);

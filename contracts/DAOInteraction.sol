@@ -170,6 +170,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   event Borrow(address indexed user, uint256 amount);
   event Payback(address indexed user, uint256 amount);
   event Withdraw(address indexed user, uint256 amount);
+  event CollateralEnabled(address token, bytes32 ilk);
+  event CollateralDisabled(address token, bytes32 ilk);
 
   VatLike public vat;
   SpotLike public spotter;
@@ -186,8 +188,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     ClipperLike clip;
   }
 
-  mapping(address => uint256) private deposits;
-  mapping(address => CollateralType) private collaterals;
+  mapping(address => uint256) public deposits;
+  mapping(address => CollateralType) public collaterals;
 
   using SafeERC20Upgradeable for IERC20Upgradeable;
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -254,10 +256,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     bytes32 ilk,
     ClipperLike clip
   ) external auth {
-    collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
-    IERC20Upgradeable(token).approve(gemJoin, type(uint256).max);
     vat.init(ilk);
-    vat.rely(gemJoin);
+    enableCollateralType(token, gemJoin, ilk, clip);
   }
 
   function enableCollateralType(
@@ -265,10 +265,11 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     address gemJoin,
     bytes32 ilk,
     ClipperLike clip
-  ) external auth {
+  ) public auth {
     collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
     IERC20Upgradeable(token).approve(gemJoin, type(uint256).max);
     vat.rely(gemJoin);
+    emit CollateralEnabled(token, ilk);
   }
 
   function setCollateralDisc(address token, address disc) external auth {
@@ -280,6 +281,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     collaterals[token].live = 0;
     address gemJoin = address(collaterals[token].gem);
     IERC20Upgradeable(token).approve(gemJoin, 0);
+    emit CollateralDisabled(token, collaterals[token].ilk);
   }
 
   function stringToBytes32(string memory source) public pure returns (bytes32 result) {
@@ -301,6 +303,12 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   ) external returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
     require(collateralType.live == 1, "Interaction/inactive collateral");
+    if (discs[token] != address(0)) {
+      require(
+        msg.sender == discs[token],
+        "Interaction/only helio provider can deposit for this token"
+      );
+    }
 
     drip(token);
     uint256 preBalance = IERC20Upgradeable(token).balanceOf(address(this));
@@ -335,11 +343,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
   }
 
-  function borrow(
-    address participant,
-    address token,
-    uint256 usbAmount
-  ) external returns (uint256) {
+  function borrow(address token, uint256 usbAmount) external returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
     require(collateralType.live == 1, "Interaction/inactive collateral");
 
@@ -349,44 +353,40 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     if (uint256(dart) * rate < usbAmount * (10**27)) {
       dart += 1; //ceiling
     }
-    vat.frob(collateralType.ilk, participant, participant, participant, 0, dart);
+    vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, dart);
     uint256 mulResult = rate * uint256(dart);
-    vat.move(participant, address(this), usbAmount * ONE);
-    usbJoin.exit(participant, usbAmount);
+    vat.move(msg.sender, address(this), usbAmount * ONE);
+    usbJoin.exit(msg.sender, usbAmount);
 
-    helioRewards.deposit(token, participant);
+    helioRewards.deposit(token, msg.sender);
 
-    emit Borrow(participant, usbAmount);
+    emit Borrow(msg.sender, usbAmount);
     return uint256(dart);
   }
 
   // Burn user's USB.
   // N.B. User collateral stays the same.
-  function payback(
-    address participant,
-    address token,
-    uint256 usbAmount
-  ) external returns (int256) {
+  function payback(address token, uint256 usbAmount) external returns (int256) {
     CollateralType memory collateralType = collaterals[token];
     require(collateralType.live == 1, "Interaction/inactive collateral");
 
-    IERC20Upgradeable(usb).safeTransferFrom(participant, address(this), usbAmount);
-    usbJoin.join(participant, usbAmount);
+    IERC20Upgradeable(usb).safeTransferFrom(msg.sender, address(this), usbAmount);
+    usbJoin.join(msg.sender, usbAmount);
     (, uint256 rate, , , ) = vat.ilks(collateralType.ilk);
     int256 dart = int256(hMath.mulDiv(usbAmount, 10**27, rate));
     if (uint256(dart) * rate < usbAmount * (10**27)) {
       dart += 1; //ceiling
     }
-    vat.frob(collateralType.ilk, participant, participant, participant, 0, -dart);
+    vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, -dart);
 
-    (, uint256 art) = vat.urns(collateralType.ilk, participant);
+    (, uint256 art) = vat.urns(collateralType.ilk, msg.sender);
     if ((int256(rate * art) / 10**27) == dart) {
-      EnumerableSet.remove(usersInDebt, participant);
+      EnumerableSet.remove(usersInDebt, msg.sender);
     }
 
-    helioRewards.withdraw(token, participant);
+    helioRewards.withdraw(token, msg.sender);
 
-    emit Payback(participant, usbAmount);
+    emit Payback(msg.sender, usbAmount);
     return dart;
   }
 
@@ -398,6 +398,17 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   ) external returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
     require(collateralType.live == 1, "Interaction/inactive collateral");
+    if (discs[token] != address(0)) {
+      require(
+        msg.sender == discs[token],
+        "Interaction/Only helio provider can call this function for this token"
+      );
+    } else {
+      require(
+        msg.sender == participant,
+        "Interaction/Caller must be the same address as participant"
+      );
+    }
 
     uint256 unlocked = free(token, participant);
     if (unlocked < dink) {
@@ -663,5 +674,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
   function getUsersInDebt() external view returns (address[] memory) {
     return EnumerableSet.values(usersInDebt);
+  }
+
+  function totalPegLiquidity() external view returns (uint256) {
+    return IERC20Upgradeable(usb).totalSupply();
   }
 }

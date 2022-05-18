@@ -547,4 +547,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function getUsersInDebt() external view returns (address[] memory){
         return EnumerableSet.values(usersInDebt);
     }
+
+    function totalPegLiquidity() external view returns (uint256) {
+        return IERC20Upgradeable(usb).totalSupply();
+    }
 }

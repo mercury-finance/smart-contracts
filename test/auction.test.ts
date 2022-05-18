@@ -92,7 +92,7 @@ xdescribe("Auction", () => {
 
     await helioToken.rely(rewards.address);
     await rewards.setHelioToken(helioToken.address);
-    await rewards.initPool(abnbc.address, collateral, "1000000001847694957439350500"); //6%
+    await rewards.initPool(helioToken.address, collateral, "1000000001847694957439350500"); //6%
 
     // Usb module
     usb = await Usb.connect(deployer).deploy(97, "USB");

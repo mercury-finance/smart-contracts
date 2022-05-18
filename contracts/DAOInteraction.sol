@@ -8,38 +8,53 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./hMath.sol";
 
-struct Sale {
-    uint256 pos;  // Index in active array
-    uint256 tab;  // Usb to raise       [rad]
-    uint256 lot;  // collateral to sell [wad]
-    address usr;  // Liquidated CDP
-    uint96  tic;  // Auction start time
-    uint256 top;  // Starting price     [ray]
-}
+
+import "hardhat/console.sol";
+
+    struct Sale {
+        uint256 pos;  // Index in active array
+        uint256 tab;  // Usb to raise       [rad]
+        uint256 lot;  // collateral to sell [wad]
+        address usr;  // Liquidated CDP
+        uint96 tic;  // Auction start time
+        uint256 top;  // Starting price     [ray]
+    }
 
 interface VatLike {
     function init(bytes32 ilk) external;
+
     function hope(address usr) external;
+
     function rely(address usr) external;
+
     function move(address src, address dst, uint256 rad) external;
+
     function behalf(address bit, address usr) external;
+
     function frob(bytes32 i, address u, address v, address w, int dink, int dart) external;
+
     function flux(bytes32 ilk, address src, address dst, uint256 wad) external;
 
-    function ilks(bytes32) external view returns(uint256, uint256, uint256, uint256, uint256);
-    function gem(bytes32, address) external view returns(uint256);
-    function usb(address) external view returns(uint256);
-    function urns(bytes32, address) external view returns(uint256, uint256);
+    function ilks(bytes32) external view returns (uint256, uint256, uint256, uint256, uint256);
+
+    function gem(bytes32, address) external view returns (uint256);
+
+    function usb(address) external view returns (uint256);
+
+    function urns(bytes32, address) external view returns (uint256, uint256);
 }
 
 interface GemJoinLike {
     function join(address usr, uint wad) external;
+
     function exit(address usr, uint wad) external;
+
     function gem() external view returns (IERC20Upgradeable);
 }
 
 interface UsbGemLike {
     function join(address usr, uint wad) external;
+
     function exit(address usr, uint wad) external;
 }
 
@@ -51,13 +66,14 @@ interface PipLike {
 }
 
 interface SpotLike {
-    function ilks(bytes32) external view returns(PipLike, uint256);
+    function ilks(bytes32) external view returns (PipLike, uint256);
 }
 
 interface JugLike {
     function drip(bytes32 ilk) external returns (uint256);
 
-    function ilks(bytes32) external view returns(uint256, uint256);
+    function ilks(bytes32) external view returns (uint256, uint256);
+
     function base() external view returns (uint256);
 }
 
@@ -71,12 +87,14 @@ interface CeRouterLike {
 
 interface ClipperLike {
     function ilk() external view returns (bytes32);
+
     function kick(
         uint256 tab,
         uint256 lot,
         address usr,
         address kpr
     ) external returns (uint256);
+
     function take(
         uint256 id,
         uint256 amt,
@@ -84,22 +102,27 @@ interface ClipperLike {
         address who,
         bytes calldata data
     ) external;
+
     function kicks() external view returns (uint256);
+
     function count() external view returns (uint256);
+
     function list() external view returns (uint256[] memory);
-    function sales(uint256 auctionId) external view returns(Sale memory);
+
+    function sales(uint256 auctionId) external view returns (Sale memory);
 }
 
 interface Rewards {
-    function deposit(address token, address usr) external;
-    function withdraw(address token, address usr) external;
+    function drop(address token, address usr) external;
 }
 
 contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
-    mapping (address => uint) public wards;
-    function rely(address usr) external auth { wards[usr] = 1; }
-    function deny(address usr) external auth { wards[usr] = 0; }
+    mapping(address => uint) public wards;
+
+    function rely(address usr) external auth {wards[usr] = 1;}
+
+    function deny(address usr) external auth {wards[usr] = 0;}
     modifier auth {
         require(wards[msg.sender] == 1, "Interaction/not-authorized");
         _;
@@ -127,8 +150,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         ClipperLike clip;
     }
 
-    mapping (address => uint256) public deposits;
-    mapping (address => CollateralType) public collaterals;
+    mapping(address => uint256) public deposits;
+    mapping(address => CollateralType) public collaterals;
 
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -138,7 +161,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 constant ONE = 10 ** 27;
     uint256 constant RAY = 10 ** 27;
 
-    mapping (address => address) public discs;  // e.g. Auction purchase from ceabnbc to abnbc
+    mapping(address => address) public discs;  // e.g. Auction purchase from ceabnbc to abnbc
 
     function initialize(address vat_,
         address spot_,
@@ -168,7 +191,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    function setCores(address vat_, address spot_,address usbJoin_,
+    function setCores(address vat_, address spot_, address usbJoin_,
         address jug_) public auth {
         vat = VatLike(vat_);
         spotter = SpotLike(spot_);
@@ -186,20 +209,29 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             115792089237316195423570985008687907853269984665640564039457584007913129639935);
     }
 
-    function setCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) external auth {
+    function setCollateralType(
+        address token,
+        address gemJoin,
+        bytes32 ilk,
+        ClipperLike clip
+    ) external auth {
         vat.init(ilk);
         enableCollateralType(token, gemJoin, ilk, clip);
     }
 
-    function enableCollateralType(address token, address gemJoin, bytes32 ilk, ClipperLike clip) public auth {
+    function enableCollateralType(
+        address token,
+        address gemJoin,
+        bytes32 ilk,
+        ClipperLike clip
+    ) public auth {
         collaterals[token] = CollateralType(GemJoinLike(gemJoin), ilk, 1, clip);
-        IERC20Upgradeable(token).approve(gemJoin,
-            115792089237316195423570985008687907853269984665640564039457584007913129639935);
+        IERC20Upgradeable(token).approve(gemJoin, type(uint256).max);
         vat.rely(gemJoin);
         emit CollateralEnabled(token, ilk);
     }
 
-    function setCollateralDisc(address token, address disc) external auth { // address(0) means removal
+    function setCollateralDisc(address token, address disc) external auth {// address(0) means removal
         discs[token] = disc;
     }
 
@@ -221,9 +253,19 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         }
     }
 
-    function deposit(address participant, address token, uint256 dink) external returns (uint256){
+    function deposit(
+        address participant,
+        address token,
+        uint256 dink
+    ) external returns (uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
+        if (discs[token] != address(0)) {
+            require(
+                msg.sender == discs[token],
+                "Interaction/only helio provider can deposit for this token"
+            );
+        }
 
         drip(token);
         uint256 preBalance = IERC20Upgradeable(token).balanceOf(address(this));
@@ -258,22 +300,23 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
     }
 
-    function borrow(address token, uint256 usbAmount) external returns(uint256) {
+    function borrow(address token, uint256 usbAmount) external returns (uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         drip(token);
-        (, uint256 rate,,,) = vat.ilks(collateralType.ilk);
+        (, uint256 rate, , ,) = vat.ilks(collateralType.ilk);
         int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
         if (uint256(dart) * rate < usbAmount * (10 ** 27)) {
-            dart += 1; //ceiling
+            dart += 1;
+            //ceiling
         }
         vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, dart);
         uint256 mulResult = rate * uint256(dart);
         vat.move(msg.sender, address(this), usbAmount * ONE);
         usbJoin.exit(msg.sender, usbAmount);
 
-        helioRewards.deposit(token, msg.sender);
+        helioRewards.drop(token, msg.sender);
 
         emit Borrow(msg.sender, usbAmount);
         return uint256(dart);
@@ -281,39 +324,63 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     // Burn user's USB.
     // N.B. User collateral stays the same.
-    function payback(address token, uint256 usbAmount) external returns(int256) {
+    function payback(address token, uint256 usbAmount) external returns (int256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         IERC20Upgradeable(usb).safeTransferFrom(msg.sender, address(this), usbAmount);
         usbJoin.join(msg.sender, usbAmount);
         (,uint256 rate,,,) = vat.ilks(collateralType.ilk);
+        //        int256 dart = int256(hMath.mulDivRoundingUp(usbAmount, 10 ** 27, rate));
         int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
         if (uint256(dart) * rate < usbAmount * (10 ** 27)) {
-            dart += 1; //ceiling
+            dart += 1;
+            //ceiling
         }
-        vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, -dart);
+        console.log("Dart is:");
+        console.logInt(- dart);
+        console.log("Ilk.rate: %s", rate);
+        console.log("Dtab is:");
+        console.logInt(- dart * int256(rate));
+
+        vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, - dart);
 
         (, uint256 art) = vat.urns(collateralType.ilk, msg.sender);
-        if ((int256(rate * art) / 10**27) == dart) {
+        if ((int256(rate * art) / 10 ** 27) == dart) {
             EnumerableSet.remove(usersInDebt, msg.sender);
         }
 
-        helioRewards.withdraw(token, msg.sender);
+        helioRewards.drop(token, msg.sender);
 
+        drip(token);
         emit Payback(msg.sender, usbAmount);
         return dart;
     }
 
     // Unlock and transfer to the user `dink` amount of aBNBc
-    function withdraw(address participant, address token, uint256 dink) external returns(uint256) {
+    function withdraw(
+        address participant,
+        address token,
+        uint256 dink
+    ) external returns (uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
+        if (discs[token] != address(0)) {
+            require(
+                msg.sender == discs[token],
+                "Interaction/Only helio provider can call this function for this token"
+            );
+        } else {
+            require(
+                msg.sender == participant,
+                "Interaction/Caller must be the same address as participant"
+            );
+        }
 
         uint256 unlocked = free(token, participant);
         if (unlocked < dink) {
             int256 diff = int256(dink) - int256(unlocked);
-            vat.frob(collateralType.ilk, participant, participant, participant, -diff, 0);
+            vat.frob(collateralType.ilk, participant, participant, participant, - diff, 0);
             vat.flux(collateralType.ilk, participant, address(this), uint256(diff));
         }
         // Collateral is actually transferred back to user inside `exit` operation.
@@ -360,7 +427,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (, uint256 rate,,,) = vat.ilks(collateralType.ilk);
-        return rate / 10**9;
+        return rate / 10 ** 9;
     }
 
     // Returns the collateral ratio in percents with 18 decimals
@@ -370,9 +437,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         (,uint256 mat) = spotter.ilks(collateralType.ilk);
 
-//        (,,uint256 spot,,) = vat.ilks(collateralType.ilk);
-//        return spot / 10**9;
-        return 10**45 / mat;
+        //        (,,uint256 spot,,) = vat.ilks(collateralType.ilk);
+        //        return spot / 10**9;
+        return 10 ** 45 / mat;
     }
 
     // Total aBNBc deposited nominated in $
@@ -417,7 +484,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     // Collateral minus borrowed. Basically free collateral (nominated in USB)
-    function availableToBorrow(address token, address usr) external view returns(int256) {
+    function availableToBorrow(address token, address usr) external view returns (int256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
@@ -430,13 +497,13 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     // Collateral + `amount` minus borrowed. Basically free collateral (nominated in USB)
     // Returns how much usb you can borrow if provide additional `amount` of collateral
-    function willBorrow(address token, address usr, int256 amount) external view returns(int256) {
+    function willBorrow(address token, address usr, int256 amount) external view returns (int256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (uint256 ink, uint256 art) = vat.urns(collateralType.ilk, usr);
         (, uint256 rate, uint256 spot,,) = vat.ilks(collateralType.ilk);
-        require(amount >= -(int256(ink)), "Cannot withdraw more than current amount");
+        require(amount >= - (int256(ink)), "Cannot withdraw more than current amount");
         if (amount < 0) {
             ink = uint256(int256(ink) + amount);
         } else {
@@ -455,7 +522,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         (uint256 ink, uint256 art) = vat.urns(collateralType.ilk, usr);
         (, uint256 rate,,,) = vat.ilks(collateralType.ilk);
         (,uint256 mat) = spotter.ilks(collateralType.ilk);
-        uint256 backedDebt = (art * rate / 10**36) * mat;
+        uint256 backedDebt = (art * rate / 10 ** 36) * mat;
         return backedDebt / ink;
     }
 
@@ -465,7 +532,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (uint256 ink, uint256 art) = vat.urns(collateralType.ilk, usr);
-        require(amount >= -(int256(ink)), "Cannot withdraw more than current amount");
+        require(amount >= - (int256(ink)), "Cannot withdraw more than current amount");
         if (amount < 0) {
             ink = uint256(int256(ink) + amount);
         } else {
@@ -473,19 +540,19 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         }
         (, uint256 rate, uint256 spot,,) = vat.ilks(collateralType.ilk);
         (,uint256 mat) = spotter.ilks(collateralType.ilk);
-        uint256 backedDebt = (art * rate / 10**36) * mat;
+        uint256 backedDebt = (art * rate / 10 ** 36) * mat;
         return backedDebt / ink;
     }
 
     // Returns borrow APR with 20 decimals.
     // I.e. 10% == 10 ethers
-    function borrowApr(address token) public view returns(uint256) {
+    function borrowApr(address token) public view returns (uint256) {
         CollateralType memory collateralType = collaterals[token];
         require(collateralType.live == 1, "Interaction/inactive collateral");
 
         (uint256 duty,) = jug.ilks(collateralType.ilk);
         uint256 principal = hMath.rpow((jug.base() + duty), 31536000, ONE);
-        return (principal - ONE)/ (10 ** 7);
+        return (principal - ONE) / (10 ** 7);
     }
 
     function startAuction(address token, address user, address keeper) external returns (uint256) {

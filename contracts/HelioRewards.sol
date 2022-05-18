@@ -37,6 +37,7 @@ contract HelioRewards {
         _;
     }
 
+    uint256 constant YEAR = 365 * 24 * 3600; //seconds
     uint256 constant RAD = 10 ** 18; // ray
     uint256 constant ONE = 10 ** 27; // ray
     uint256 public live;  // Active Flag
@@ -69,6 +70,7 @@ contract HelioRewards {
 
     VatLike                  public vat; // CDP engine
     address public helioToken;
+    MCDOracle public oracle;
 
     uint256 public rewardsPool;
 
@@ -91,6 +93,10 @@ contract HelioRewards {
         helioToken = helioToken_;
     }
 
+    function setOracle(address oracle_) external auth {
+        oracle = MCDOracle(oracle_);
+    }
+
     function setRate(address token, uint256 newRate) external auth {
         Ilk storage pool = pools[token];
         pool.rewardRate = newRate;
@@ -98,13 +104,12 @@ contract HelioRewards {
 
     // 1 USB is helioPrice() helios
     function helioPrice() public view returns(uint256) {
-        return 10000000000000000000; //FIXME: HARDCODED 10 cents
-    }
-
-    // FIXME FOR DEBUG
-    function addRewards(address usr, uint256 amount) external auth {
-        Pile storage pile = piles[usr][poolsList[0]];
-        pile.amount += amount;
+        (bytes32 price, bool has) = oracle.peek();
+        if (has) {
+            return uint256(price);
+        } else {
+            return 0;
+        }
     }
 
     function rate(address token) public view returns(uint256) {
@@ -113,7 +118,7 @@ contract HelioRewards {
 
     // Yearly api in percents with 18 decimals
     function distributionApy(address token) public view returns(uint256) {
-        return (hMath.rpow(pools[token].rewardRate, 31536000, ONE) - ONE) / 10 ** 7;
+        return (hMath.rpow(pools[token].rewardRate, YEAR, ONE) - ONE) / 10 ** 7;
     }
 //
     function claimable(address token, address usr) public poolInit(token) view returns (uint256) {
@@ -130,18 +135,8 @@ contract HelioRewards {
         return acc - claimedRewards[usr];
     }
 
-    // Called when user return borrow amount.
-    function withdraw(address token, address usr) external auth poolInit(token) {
-        drop(token, usr);
-    }
-
-    // Called whenever user borrow some amount
-    function deposit(address token, address usr) external auth poolInit(token) {
-        drop(token, usr);
-    }
-
     //drop unrealised rewards
-    function drop(address token, address usr) private {
+    function drop(address token, address usr) public {
         Pile storage pile = piles[usr][token];
 
         pile.amount += unrealisedRewards(token, usr);

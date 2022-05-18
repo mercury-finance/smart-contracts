@@ -34,127 +34,144 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 */
 
 contract JarR {
-    // --- Wrapper ---
-    using SafeERC20 for IERC20;
+  // --- Wrapper ---
+  using SafeERC20 for IERC20;
 
-    // --- Auth ---
-    mapping (address => uint) public wards;
-    function rely(address guy) external auth { wards[guy] = 1; }
-    function deny(address guy) external auth { wards[guy] = 0; }
-    modifier auth {
-        require(wards[msg.sender] == 1, "Jar/not-authorized");
-        _;
+  // --- Auth ---
+  mapping(address => uint256) public wards;
+
+  function rely(address guy) external auth {
+    wards[guy] = 1;
+  }
+
+  function deny(address guy) external auth {
+    wards[guy] = 0;
+  }
+
+  modifier auth() {
+    require(wards[msg.sender] == 1, "Jar/not-authorized");
+    _;
+  }
+
+  // --- Derivative ---
+  string public name;
+  string public symbol;
+  uint8 public decimals = 18;
+  uint256 public totalSupply;
+  mapping(address => uint256) public balanceOf;
+
+  // --- Reward Data ---
+  uint256 public spread; // Distribution time    [sec]
+  uint256 public usbDeposit; // Total USBs in farm   [wad]
+  uint256 public exitDelay; // User unstake delay   [sec]
+
+  uint256 public ratio;
+  // solhint-disable-next-line var-name-mixedcase
+  address public USB;
+
+  mapping(address => uint256) public redeemables; // Capital + Rewards
+  mapping(address => uint256) public unstakeTime; // Time of Unstake
+
+  uint256 public live; // Active Flag
+
+  // --- Events ---
+  event Initialized(uint256 indexed duration, uint256 indexed exitDelay);
+  event Replenished(uint256 reward);
+  event Join(address indexed user, uint256 indexed amount);
+  event Exit(address indexed user, uint256 indexed amount);
+  event Redeem(address[] indexed user);
+  event Cage();
+
+  // --- Init ---
+  constructor(
+    address _usb,
+    string memory _name,
+    string memory _symbol
+  ) {
+    wards[msg.sender] = 1;
+    live = 1;
+
+    USB = _usb;
+    name = _name;
+    symbol = _symbol;
+
+    ratio = 1e18;
+  }
+
+  // --- Mods ---
+  modifier update() {
+    if (totalSupply != 0) {
+      require(usbDeposit > 0, "Jar/denominator-is-0");
+      ratio = (totalSupply * 1e18) / usbDeposit;
+    }
+    _;
+  }
+
+  // --- Views ---
+  function balanceOfWithRewards(address account) public view returns (uint256) {
+    return (balanceOf[account] * 1e18) / ratio;
+  }
+
+  // --- Aministration ---
+  function initialize(uint256 _spread, uint256 _exitDelay) public auth {
+    spread = _spread;
+    exitDelay = _exitDelay;
+    emit Initialized(spread, exitDelay);
+  }
+
+  function replenish(uint256 wad) public update {
+    usbDeposit += wad;
+
+    IERC20(USB).safeTransferFrom(msg.sender, address(this), wad);
+    emit Replenished(wad);
+  }
+
+  function cage() external auth {
+    live = 0;
+    emit Cage();
+  }
+
+  // --- User ---
+  function join(uint256 wad) public {
+    // amount in USBs
+    require(live == 1, "Jar/not-live");
+
+    uint256 bal = (wad * ratio) / 1e18; // hUSBs
+    balanceOf[msg.sender] += bal;
+    totalSupply += bal;
+    usbDeposit += wad;
+
+    IERC20(USB).safeTransferFrom(msg.sender, address(this), wad);
+    emit Join(msg.sender, bal);
+  }
+
+  function exit(uint256 wad) public {
+    // amount in hUSBs
+    require(live == 1, "Jar/not-live");
+
+    uint256 bal = (wad * 1e18) / ratio; // USBs
+    balanceOf[msg.sender] -= wad;
+    totalSupply -= wad;
+    redeemables[msg.sender] += bal; // USBs
+    usbDeposit -= bal;
+    unstakeTime[msg.sender] = block.timestamp + exitDelay;
+
+    emit Exit(msg.sender, bal);
+  }
+
+  function redeemBatch(address[] memory accounts) external {
+    require(live == 1, "Jar/not-live");
+
+    for (uint256 i = 0; i < accounts.length; i++) {
+      if (block.timestamp < unstakeTime[accounts[i]]) continue;
+
+      uint256 redeemable = redeemables[accounts[i]];
+      if (redeemable > 0) {
+        redeemables[accounts[i]] = 0;
+        IERC20(USB).safeTransfer(accounts[i], redeemable);
+      }
     }
 
-    // --- Derivative ---
-    string public name;
-    string public symbol;
-    uint8 public decimals = 18;
-    uint public totalSupply;
-    mapping(address => uint) public balanceOf;
-
-    // --- Reward Data ---
-    uint public spread;     // Distribution time    [sec]
-    uint public usbDeposit; // Total USBs in farm   [wad]
-    uint public exitDelay;  // User unstake delay   [sec]
-
-    uint256 public ratio;
-    address public USB;
-
-    mapping(address => uint) public redeemables;  // Capital + Rewards
-    mapping(address => uint) public unstakeTime;  // Time of Unstake
-
-    uint    public live;     // Active Flag
-
-    // --- Events ---
-    event Initialized(uint indexed duration, uint indexed exitDelay);
-    event Replenished(uint reward);
-    event Join(address indexed user, uint indexed amount);
-    event Exit(address indexed user, uint indexed amount);
-    event Redeem(address[] indexed user);
-    event Cage();
-
-    // --- Init ---
-    constructor(address _USB, string memory _name, string memory _symbol) {
-        wards[msg.sender] = 1;
-        live = 1;
-
-        USB = _USB;
-        name = _name;
-        symbol = _symbol;
-
-        ratio = 1e18;
-    }
-
-    // --- Mods ---
-    modifier update() {
-        if(totalSupply != 0) {
-            require(usbDeposit > 0, "Jar/denominator-is-0");
-            ratio = (totalSupply * 1e18) / usbDeposit;
-        }
-        _;
-    } 
-
-    // --- Views ---
-    function balanceOfWithRewards(address account) public view returns (uint256) {
-        return (balanceOf[account] * 1e18) / ratio;
-    }
-
-    // --- Aministration ---
-    function initialize(uint _spread, uint _exitDelay) public auth {
-        spread = _spread;
-        exitDelay = _exitDelay;
-        emit Initialized(spread, exitDelay);
-    }
-    function replenish(uint wad) public update {
-        usbDeposit += wad;
-
-        IERC20(USB).safeTransferFrom(msg.sender, address(this), wad);
-        emit Replenished(wad);
-    } 
-    function cage() external auth {
-        live = 0;
-        emit Cage();
-    }
-
-    // --- User ---
-    function join(uint256 wad) public { // amount in USBs
-        require(live == 1, "Jar/not-live");
-
-        uint bal = (wad * ratio) / 1e18; // hUSBs
-        balanceOf[msg.sender] += bal;
-        totalSupply += bal;
-        usbDeposit += wad;
-
-        IERC20(USB).safeTransferFrom(msg.sender, address(this), wad);
-        emit Join(msg.sender, bal);
-    }
-    function exit(uint256 wad) public { // amount in hUSBs
-        require(live == 1, "Jar/not-live");
-
-        uint bal = (wad * 1e18) / ratio; // USBs
-        balanceOf[msg.sender] -= wad;
-        totalSupply -= wad;
-        redeemables[msg.sender] += bal;  // USBs
-        usbDeposit -= bal;
-        unstakeTime[msg.sender] = block.timestamp + exitDelay;
-
-        emit Exit(msg.sender, bal);
-    }
-    function redeemBatch(address[] memory accounts) external {
-        require(live == 1, "Jar/not-live");
-
-        for (uint i = 0; i < accounts.length; i++) {
-            if (block.timestamp < unstakeTime[accounts[i]])
-                continue;
-
-            uint256 redeemable = redeemables[accounts[i]];
-            if (redeemable > 0) {
-                redeemables[accounts[i]] = 0;
-                IERC20(USB).safeTransfer(accounts[i], redeemable);
-            }
-        }
-
-        emit Redeem(accounts);
-    }
+    emit Redeem(accounts);
+  }
 }

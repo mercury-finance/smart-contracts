@@ -7,49 +7,46 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract CeToken is OwnableUpgradeable, ERC20Upgradeable {
-    /**
-     * Variables
-     */
+  /**
+   * Variables
+   */
 
-    address private _vault;
+  address private _vault;
 
-    /**
-     * Events
-     */
+  /**
+   * Events
+   */
 
-    event VaultChanged(address vault);
+  event VaultChanged(address vault);
 
-    /**
-     * Modifiers
-     */
+  /**
+   * Modifiers
+   */
 
-    modifier onlyMinter() {
-        require(msg.sender == _vault, "Minter: not allowed");
-        _;
-    }
+  modifier onlyMinter() {
+    require(msg.sender == _vault, "Minter: not allowed");
+    _;
+  }
 
-    function initialize(string calldata _name, string calldata _symbol)
-        external
-        initializer
-    {
-        __Ownable_init();
-        __ERC20_init_unchained(_name, _symbol);
-    }
+  function initialize(string calldata _name, string calldata _symbol) external initializer {
+    __Ownable_init();
+    __ERC20_init_unchained(_name, _symbol);
+  }
 
-    function burn(address account, uint256 amount) external onlyMinter {
-        _burn(account, amount);
-    }
+  function burn(address account, uint256 amount) external onlyMinter {
+    _burn(account, amount);
+  }
 
-    function mint(address account, uint256 amount) external onlyMinter {
-        _mint(account, amount);
-    }
+  function mint(address account, uint256 amount) external onlyMinter {
+    _mint(account, amount);
+  }
 
-    function changeVault(address vault) external onlyOwner {
-        _vault = vault;
-        emit VaultChanged(vault);
-    }
+  function changeVault(address vault) external onlyOwner {
+    _vault = vault;
+    emit VaultChanged(vault);
+  }
 
-    function getVaultAddress() external view returns (address) {
-        return _vault;
-    }
+  function getVaultAddress() external view returns (address) {
+    return _vault;
+  }
 }

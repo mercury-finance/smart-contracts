@@ -17,8 +17,8 @@ contract HelioOracle {
     /**
      * Returns the latest price
      */
-    function peek() public view returns (bytes32, bool) {
-        return (bytes32(price), true);
+    function peek() public view returns (uint256) {
+        return price;
     }
 
     function changePriceToken(uint256 price_) external {

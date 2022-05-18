@@ -23,6 +23,10 @@ interface MCDOracle {
     function peek() external view returns (bytes32, bool);
 }
 
+interface Oracle {
+    function peek() external view returns (uint256);
+}
+
 interface Mintable {
     function mint(address _to, uint256 _amount) external returns(bool);
 }
@@ -70,7 +74,7 @@ contract HelioRewards {
 
     VatLike                  public vat; // CDP engine
     address public helioToken;
-    MCDOracle public oracle;
+    Oracle public oracle;
 
     uint256 public rewardsPool;
 
@@ -94,7 +98,7 @@ contract HelioRewards {
     }
 
     function setOracle(address oracle_) external auth {
-        oracle = MCDOracle(oracle_);
+        oracle = Oracle(oracle_);
     }
 
     function setRate(address token, uint256 newRate) external auth {
@@ -104,12 +108,7 @@ contract HelioRewards {
 
     // 1 USB is helioPrice() helios
     function helioPrice() public view returns(uint256) {
-        (bytes32 price, bool has) = oracle.peek();
-        if (has) {
-            return uint256(price);
-        } else {
-            return 0;
-        }
+        return oracle.peek();
     }
 
     function rate(address token) public view returns(uint256) {
@@ -136,7 +135,7 @@ contract HelioRewards {
     }
 
     //drop unrealised rewards
-    function drop(address token, address usr) public {
+    function drop(address token, address usr) public poolInit(token) {
         Pile storage pile = piles[usr][token];
 
         pile.amount += unrealisedRewards(token, usr);

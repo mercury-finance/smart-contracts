@@ -191,7 +191,7 @@ contract Jar {
         require(live == 1, "Jar/not-live");
 
         for (uint i = 0; i < accounts.length; i++) {
-            if (block.timestamp < unstakeTime[accounts[i]])
+            if (block.timestamp < unstakeTime[accounts[i]] && unstakeTime[accounts[i]] != 0)
                 continue;
             
             uint _amount = rewards[accounts[i]] + withdrawn[accounts[i]];

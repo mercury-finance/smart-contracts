@@ -602,7 +602,13 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     address user,
     address keeper
   ) external returns (uint256 id) {
-    id = dog.bark(collaterals[token].ilk, user, keeper);
+    uint256 usbBal = usb.balanceOf(address(this));
+    id = dog.bark(collaterals[token].ilk, user, address(this));
+
+    usbJoin.exit(address(this), vat.usb(address(this)) / RAY);
+    usbBal = usb.balanceOf(address(this)) - usbBal;
+    IERC20Upgradeable(usb).transfer(keeper, usbBal);
+
     // Burn any derivative token (hBNB incase of ceabnbc collateral)
     if (discs[token] != address(0)) {
       CollateralType memory collateral = collaterals[token];

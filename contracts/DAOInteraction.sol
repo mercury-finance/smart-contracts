@@ -199,7 +199,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   uint256 internal constant ONE = 10**27;
   uint256 internal constant RAY = 10**27;
 
-  mapping(address => address) public discs; // e.g. Auction purchase from ceabnbc to abnbc
+  mapping(address => address) public helioProviders; // e.g. Auction purchase from ceabnbc to abnbc
 
   function initialize(
     address vat_,
@@ -272,9 +272,8 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     emit CollateralEnabled(token, ilk);
   }
 
-  function setCollateralDisc(address token, address disc) external auth {
-    // address(0) means removal
-    discs[token] = disc;
+  function setHelioProvider(address token, address helioProvider) external auth {
+    helioProviders[token] = helioProvider;
   }
 
   function removeCollateralType(address token) external auth {
@@ -303,9 +302,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   ) external returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
     require(collateralType.live == 1, "Interaction/inactive collateral");
-    if (discs[token] != address(0)) {
+    if (helioProviders[token] != address(0)) {
       require(
-        msg.sender == discs[token],
+        msg.sender == helioProviders[token],
         "Interaction/only helio provider can deposit for this token"
       );
     }
@@ -398,9 +397,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   ) external returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
     require(collateralType.live == 1, "Interaction/inactive collateral");
-    if (discs[token] != address(0)) {
+    if (helioProviders[token] != address(0)) {
       require(
-        msg.sender == discs[token],
+        msg.sender == helioProviders[token],
         "Interaction/Only helio provider can call this function for this token"
       );
     } else {
@@ -610,10 +609,10 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     IERC20Upgradeable(usb).transfer(keeper, usbBal);
 
     // Burn any derivative token (hBNB incase of ceabnbc collateral)
-    if (discs[token] != address(0)) {
+    if (helioProviders[token] != address(0)) {
       CollateralType memory collateral = collaterals[token];
       uint256 lot = collateral.clip.sales(id).lot;
-      HelioProviderLike(discs[token]).daoBurn(user, lot);
+      HelioProviderLike(helioProviders[token]).daoBurn(user, lot);
     }
   }
 
@@ -649,15 +648,15 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     gemBal = collateral.gem.gem().balanceOf(address(this)) - gemBal;
     IERC20Upgradeable(usb).transfer(receiverAddress, usbBal);
 
-    if (discs[token] != address(0)) {
-      collateral.gem.gem().safeTransfer(discs[token], gemBal);
-      HelioProviderLike(discs[token]).liquidation(receiverAddress, gemBal); // Burn router ceToken and mint abnbc to receiver
+    if (helioProviders[token] != address(0)) {
+      collateral.gem.gem().safeTransfer(helioProviders[token], gemBal);
+      HelioProviderLike(helioProviders[token]).liquidation(receiverAddress, gemBal); // Burn router ceToken and mint abnbc to receiver
 
       if (leftover != 0) {
         // Auction ended with leftover
         vat.flux(collateral.ilk, urn, address(this), leftover);
-        collateral.gem.exit(discs[token], leftover); // Router (disc) gets the remaining ceabnbc
-        HelioProviderLike(discs[token]).liquidation(urn, leftover); // Router burns them and gives abnbc remaining
+        collateral.gem.exit(helioProviders[token], leftover); // Router (disc) gets the remaining ceabnbc
+        HelioProviderLike(helioProviders[token]).liquidation(urn, leftover); // Router burns them and gives abnbc remaining
       }
     } else {
       collateral.gem.gem().safeTransfer(receiverAddress, gemBal);

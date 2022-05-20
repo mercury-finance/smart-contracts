@@ -4,7 +4,7 @@ const { ethers, network } = require('hardhat');
 const Web3 = require('web3');
 const {ether, expectRevert, BN, expectEvent} = require('@openzeppelin/test-helpers');
 
-const Interaction = artifacts.require('DAOInteraction');
+const Interaction = artifacts.require('Interaction');
 
 ///////////////////////////////////////////
 //Word of Notice: Commented means pending//
@@ -151,7 +151,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         await vat.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("Line"), "20000" + rad); // Normalized USB
         await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("line"), "2000" + rad);
         // await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("spot"), "500" + rad);
-        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "100000000000000000" + ray); //0.1 rad
+        await vat.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("dust"), "1000000" + ray); //0.1 rad
 
         await spot.connect(deployer)["file(bytes32,bytes32,address)"](collateral, ethers.utils.formatBytes32String("pip"), oracle.address);
         await spot.connect(deployer)["file(bytes32,bytes32,uint256)"](collateral, ethers.utils.formatBytes32String("mat"), "1250000000000000000000000000"); // Liquidation Ratio
@@ -178,7 +178,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         let fractionBR = (1 + rate_percent)**(1/year_seconds);
         // let BR = new BN(fractionBR)*10**27;
         let BR = new BN("1000000003022266000000000000").toString();
-        console.log(BR);
+        // console.log(BR);
         // await jug.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("base"), "1000000000315529215730000000"); // 1% Yearly
         await jug.connect(deployer)["file(bytes32,uint256)"](ethers.utils.formatBytes32String("base"), BR); // 1% Yearly
         // Setting duty requires now == rho. So Drip then Set, or Init then Set.
@@ -238,7 +238,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         expect(rewardPool.toString()).to.equal("0");
     });
 
-    it('put collateral and borrow', async function () {
+    xit('put collateral and borrow', async function () {
         // Approve and send some collateral inside. collateral value == 400 == `dink`
         let dink = ether("2").toString();
 
@@ -288,7 +288,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
             abnbc.address, signer1.address, ether("1").toString(), {from: signer1.address}
         );
         expect(estLiquidationPrice.toString()).to.equal(ether("25").toString());
-        console.log("Est.Liq.price is: " + estLiquidationPrice.toString());
+        // console.log("Est.Liq.price is: " + estLiquidationPrice.toString());
 
         // Update Stability Fees
         await network.provider.send("evm_increaseTime", [31536000]); // Jump 1 Year
@@ -322,7 +322,10 @@ describe('===INTERACTION2-Multicollateral===', function () {
         expect(s1USBBalance).to.equal(dart);
 
         await usb.connect(signer1).approve(interaction.address, dart);
-        await interaction.payback(abnbc.address, dart, {from: signer1.address});
+        await interaction.payback(abnbc.address, "500000000000000000", {from: signer1.address});
+        await interaction.payback(abnbc.address, "500000000000000000", {from: signer1.address});
+        await interaction.payback(abnbc.address, ether("4").toString(), {from: signer1.address});
+        await interaction.payback(abnbc.address, ether("55").toString(), {from: signer1.address});
 
         s1USBBalance = (await usb.balanceOf(signer1.address)).toString();
         expect(s1USBBalance).to.equal("0");
@@ -357,7 +360,18 @@ describe('===INTERACTION2-Multicollateral===', function () {
         expect(s1Balance).to.equal(ether("4999").toString());
     });
 
-    it('drip', async function() {
+    xit('withdraw', async function() {
+        //deposit&borrow
+        let dink = ether("10").toString();
+        await abnbc.connect(signer1).approve(interaction.address, dink);
+        await interaction.deposit(signer1.address, abnbc.address, dink, {from: signer1.address});
+        await interaction.withdraw(signer1.address, abnbc.address, dink, {from: signer1.address});
+
+        s1Balance = (await abnbc.balanceOf(signer1.address)).toString();
+        expect(s1Balance).to.equal(ether("5000").toString());
+    });
+
+    xit('drip', async function() {
         //deposit&borrow
         let dink = ether("2").toString();
         await abnbc.connect(signer1).approve(interaction.address, dink);

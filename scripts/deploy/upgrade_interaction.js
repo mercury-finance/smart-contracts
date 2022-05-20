@@ -2,24 +2,15 @@ const hre = require("hardhat");
 const { ethers, upgrades } = require("hardhat");
 require("@nomiclabs/hardhat-etherscan");
 
-const { VAT,
-    SPOT,
-    aBNBc,
-    USB,
-    UsbJoin,
-    aBNBcJoin,
-    Oracle,
-    JUG,
-    REAL_ABNBC,
-    REALaBNBcJoin,
+const {
     INTERACTION,
 } = require('../../addresses.json');
 
 async function main() {
     console.log('Running deploy script');
 
-    const Interaction = await hre.ethers.getContractFactory("DAOInteraction");
-    //
+    const Interaction = await hre.ethers.getContractFactory("Interaction");
+
     // console.log('Force importing proxy');
     // await upgrades.forceImport(INTERACTION, Interaction);
 

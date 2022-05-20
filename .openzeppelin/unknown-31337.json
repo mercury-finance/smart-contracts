@@ -25,6 +25,16 @@
       "address": "0xebD6303d9Cd09605545F723545d2d0bF56966cB9",
       "txHash": "0xb370e69d050d64f96f2ffd0209abb3bcc66e61e8fe254868465a7095d053bfc5",
       "kind": "uups"
+    },
+    {
+      "address": "0x04e08A0Ce01c5B8418F93AB38d9a0123A44c1CB3",
+      "txHash": "0x145d735a6f47e132f5cff22631c7e3ec56a0d0516f9844b9e02772489d35e34b",
+      "kind": "uups"
+    },
+    {
+      "address": "0xEF64763D1d331396F54f765e73ceE52B8A7C9627",
+      "txHash": "0xf34a5b30f54cbd50a52d608bfec4a43fd966b8a1167a0fb3fcfcae644129f60d",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -322,9 +332,9 @@
         }
       }
     },
-    "8ad6b7aa156e6a1f63333855eb75181b8b39c400bd47e5892a69d9f9676e39dc": {
-      "address": "0xbE4872c462F708cca704bE101f47296bD7500Bcc",
-      "txHash": "0x518706f51db57d41067a2fa2effa9d3bfefd44fd57115d5e90e84e90c1dbc3d3",
+    "f72ee48e65b51d40fd22f559f1281f8b0b785b6959180703c2f8514dc5bed5ed": {
+      "address": "0x153a513FBF3A779A36881C635530bFA912bAf0C7",
+      "txHash": "0x263e0a70e6d047a1a3529c5d1d5bb2eaa1ba0e346c0bfb2303f7909fa6afa99e",
       "layout": {
         "storage": [
           {
@@ -389,63 +399,63 @@
             "slot": "201",
             "type": "t_mapping(t_address,t_uint256)",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:118"
+            "src": "contracts/Interaction.sol:120"
           },
           {
             "label": "vat",
             "offset": 0,
             "slot": "202",
-            "type": "t_contract(VatLike)2089",
+            "type": "t_contract(VatLike)5302",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:135"
+            "src": "contracts/Interaction.sol:137"
           },
           {
             "label": "spotter",
             "offset": 0,
             "slot": "203",
-            "type": "t_contract(SpotLike)2147",
+            "type": "t_contract(SpotLike)5360",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:136"
+            "src": "contracts/Interaction.sol:138"
           },
           {
             "label": "usb",
             "offset": 0,
             "slot": "204",
-            "type": "t_contract(UsbLike)2128",
+            "type": "t_contract(UsbLike)5341",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:137"
+            "src": "contracts/Interaction.sol:139"
           },
           {
             "label": "usbJoin",
             "offset": 0,
             "slot": "205",
-            "type": "t_contract(UsbGemLike)2125",
+            "type": "t_contract(UsbGemLike)5338",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:138"
+            "src": "contracts/Interaction.sol:140"
           },
           {
             "label": "jug",
             "offset": 0,
             "slot": "206",
-            "type": "t_contract(JugLike)2169",
+            "type": "t_contract(JugLike)5382",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:139"
+            "src": "contracts/Interaction.sol:141"
           },
           {
             "label": "dog",
             "offset": 0,
             "slot": "207",
-            "type": "t_contract(DogLike)2181",
+            "type": "t_contract(DogLike)5394",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:140"
+            "src": "contracts/Interaction.sol:142"
           },
           {
             "label": "helioRewards",
             "offset": 0,
             "slot": "208",
-            "type": "t_contract(Rewards)2255",
+            "type": "t_contract(Rewards)5468",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:141"
+            "src": "contracts/Interaction.sol:143"
           },
           {
             "label": "deposits",
@@ -453,23 +463,23 @@
             "slot": "209",
             "type": "t_mapping(t_address,t_uint256)",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:150"
+            "src": "contracts/Interaction.sol:152"
           },
           {
             "label": "collaterals",
             "offset": 0,
             "slot": "210",
-            "type": "t_mapping(t_address,t_struct(CollateralType)2375_storage)",
+            "type": "t_mapping(t_address,t_struct(CollateralType)5588_storage)",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:151"
+            "src": "contracts/Interaction.sol:153"
           },
           {
             "label": "usersInDebt",
             "offset": 0,
             "slot": "211",
-            "type": "t_struct(AddressSet)1681_storage",
+            "type": "t_struct(AddressSet)4138_storage",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:156"
+            "src": "contracts/Interaction.sol:158"
           },
           {
             "label": "discs",
@@ -477,7 +487,7 @@
             "slot": "213",
             "type": "t_mapping(t_address,t_address)",
             "contract": "Interaction",
-            "src": "contracts/Interaction.sol:162"
+            "src": "contracts/Interaction.sol:164"
           }
         ],
         "types": {
@@ -505,39 +515,39 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(ClipperLike)2247": {
+          "t_contract(ClipperLike)5460": {
             "label": "contract ClipperLike",
             "numberOfBytes": "20"
           },
-          "t_contract(DogLike)2181": {
+          "t_contract(DogLike)5394": {
             "label": "contract DogLike",
             "numberOfBytes": "20"
           },
-          "t_contract(GemJoinLike)2110": {
+          "t_contract(GemJoinLike)5323": {
             "label": "contract GemJoinLike",
             "numberOfBytes": "20"
           },
-          "t_contract(JugLike)2169": {
+          "t_contract(JugLike)5382": {
             "label": "contract JugLike",
             "numberOfBytes": "20"
           },
-          "t_contract(Rewards)2255": {
+          "t_contract(Rewards)5468": {
             "label": "contract Rewards",
             "numberOfBytes": "20"
           },
-          "t_contract(SpotLike)2147": {
+          "t_contract(SpotLike)5360": {
             "label": "contract SpotLike",
             "numberOfBytes": "20"
           },
-          "t_contract(UsbGemLike)2125": {
+          "t_contract(UsbGemLike)5338": {
             "label": "contract UsbGemLike",
             "numberOfBytes": "20"
           },
-          "t_contract(UsbLike)2128": {
+          "t_contract(UsbLike)5341": {
             "label": "contract UsbLike",
             "numberOfBytes": "20"
           },
-          "t_contract(VatLike)2089": {
+          "t_contract(VatLike)5302": {
             "label": "contract VatLike",
             "numberOfBytes": "20"
           },
@@ -545,7 +555,7 @@
             "label": "mapping(address => address)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(CollateralType)2375_storage)": {
+          "t_mapping(t_address,t_struct(CollateralType)5588_storage)": {
             "label": "mapping(address => struct Interaction.CollateralType)",
             "numberOfBytes": "32"
           },
@@ -557,24 +567,24 @@
             "label": "mapping(bytes32 => uint256)",
             "numberOfBytes": "32"
           },
-          "t_struct(AddressSet)1681_storage": {
+          "t_struct(AddressSet)4138_storage": {
             "label": "struct EnumerableSet.AddressSet",
             "members": [
               {
                 "label": "_inner",
-                "type": "t_struct(Set)1380_storage",
+                "type": "t_struct(Set)3837_storage",
                 "offset": 0,
                 "slot": "0"
               }
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(CollateralType)2375_storage": {
+          "t_struct(CollateralType)5588_storage": {
             "label": "struct Interaction.CollateralType",
             "members": [
               {
                 "label": "gem",
-                "type": "t_contract(GemJoinLike)2110",
+                "type": "t_contract(GemJoinLike)5323",
                 "offset": 0,
                 "slot": "0"
               },
@@ -592,14 +602,320 @@
               },
               {
                 "label": "clip",
-                "type": "t_contract(ClipperLike)2247",
+                "type": "t_contract(ClipperLike)5460",
                 "offset": 4,
                 "slot": "2"
               }
             ],
             "numberOfBytes": "96"
           },
-          "t_struct(Set)1380_storage": {
+          "t_struct(Set)3837_storage": {
+            "label": "struct EnumerableSet.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          }
+        }
+      }
+    },
+    "8e593c0082bfd2623c9af0dd4b66532da3438ce130db1bbf45f4499a6ce4ff8b": {
+      "address": "0x2D9Fb88AF9dC061FFDaC4fC09c4899F5609a5b15",
+      "txHash": "0x80cadfc60a0ec10152f8f1469fec84c0ca9fee1b7d69302a042e614255d393d4",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
+          },
+          {
+            "label": "wards",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:120"
+          },
+          {
+            "label": "vat",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_contract(VatLike)5302",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:137"
+          },
+          {
+            "label": "spotter",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_contract(SpotLike)5360",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:138"
+          },
+          {
+            "label": "usb",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_contract(UsbLike)5341",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:139"
+          },
+          {
+            "label": "usbJoin",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_contract(UsbGemLike)5338",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:140"
+          },
+          {
+            "label": "jug",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_contract(JugLike)5382",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:141"
+          },
+          {
+            "label": "dog",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_contract(DogLike)5394",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:142"
+          },
+          {
+            "label": "helioRewards",
+            "offset": 0,
+            "slot": "208",
+            "type": "t_contract(Rewards)5468",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:143"
+          },
+          {
+            "label": "deposits",
+            "offset": 0,
+            "slot": "209",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:152"
+          },
+          {
+            "label": "collaterals",
+            "offset": 0,
+            "slot": "210",
+            "type": "t_mapping(t_address,t_struct(CollateralType)5588_storage)",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:153"
+          },
+          {
+            "label": "usersInDebt",
+            "offset": 0,
+            "slot": "211",
+            "type": "t_struct(AddressSet)4138_storage",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:158"
+          },
+          {
+            "label": "discs",
+            "offset": 0,
+            "slot": "213",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "Interaction",
+            "src": "contracts/Interaction.sol:164"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ClipperLike)5460": {
+            "label": "contract ClipperLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(DogLike)5394": {
+            "label": "contract DogLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(GemJoinLike)5323": {
+            "label": "contract GemJoinLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(JugLike)5382": {
+            "label": "contract JugLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(Rewards)5468": {
+            "label": "contract Rewards",
+            "numberOfBytes": "20"
+          },
+          "t_contract(SpotLike)5360": {
+            "label": "contract SpotLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(UsbGemLike)5338": {
+            "label": "contract UsbGemLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(UsbLike)5341": {
+            "label": "contract UsbLike",
+            "numberOfBytes": "20"
+          },
+          "t_contract(VatLike)5302": {
+            "label": "contract VatLike",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(CollateralType)5588_storage)": {
+            "label": "mapping(address => struct Interaction.CollateralType)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AddressSet)4138_storage": {
+            "label": "struct EnumerableSet.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)3837_storage",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(CollateralType)5588_storage": {
+            "label": "struct Interaction.CollateralType",
+            "members": [
+              {
+                "label": "gem",
+                "type": "t_contract(GemJoinLike)5323",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "ilk",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "live",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "clip",
+                "type": "t_contract(ClipperLike)5460",
+                "offset": 4,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(Set)3837_storage": {
             "label": "struct EnumerableSet.Set",
             "members": [
               {

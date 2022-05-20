@@ -2,7 +2,7 @@ const hre = require("hardhat");
 
 const { VAT,
     ceBNBc, INTERACTION,
-    COLLATERAL_CE_ABNBC, HELIO_TOKEN,
+    COLLATERAL_CE_ABNBC, HELIO_TOKEN, HELIO_ORACLE,
 } = require('../../addresses-stage.json');
 const {ethers} = require("hardhat");
 
@@ -24,9 +24,9 @@ async function main() {
     await rewards.deployed();
     console.log("Rewards deployed to:", rewards.address);
 
-    const helioOracle = await this.HelioOracle.deploy("100000000000000000");
-    await helioOracle.deployed();
-    console.log("helioOracle deployed to:", helioOracle.address);
+    // const helioOracle = await this.HelioOracle.deploy("100000000000000000");
+    // await helioOracle.deployed();
+    // console.log("helioOracle deployed to:", helioOracle.address);
 
     console.log('Adding rewards pool');
     let collateral3 = ethers.utils.formatBytes32String(COLLATERAL_CE_ABNBC);
@@ -35,7 +35,7 @@ async function main() {
     await rewards.setHelioToken(helioToken.address);
     await rewards.initPool(ceBNBc, collateral3, "1000000001847694957439350500"); //6%
     await interaction.setRewards(rewards.address);
-    await rewards.setOracle(helioOracle.address);
+    await rewards.setOracle(HELIO_ORACLE);
     console.log('Validating code');
 
     await hre.run("verify:verify", {

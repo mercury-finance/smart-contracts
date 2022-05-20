@@ -329,15 +329,15 @@ contract Interaction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         IERC20Upgradeable(usb).safeTransferFrom(msg.sender, address(this), usbAmount);
         usbJoin.join(msg.sender, usbAmount);
         (,uint256 rate,,,) = vat.ilks(collateralType.ilk);
-        //        int256 dart = int256(hMath.mulDivRoundingUp(usbAmount, 10 ** 27, rate));
+        (, uint256 art) = vat.urns(collateralType.ilk, msg.sender);
         int256 dart = int256(hMath.mulDiv(usbAmount, 10 ** 27, rate));
-        if (uint256(dart) * rate < usbAmount * (10 ** 27)) {
-            dart += 1;
-            //ceiling
+        if (uint256(dart) * rate < usbAmount * (10 ** 27) &&
+            uint256(dart + 1) * rate <= vat.usb(msg.sender)
+            ) {
+            dart += 1; // ceiling
         }
         vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, - dart);
 
-        (, uint256 art) = vat.urns(collateralType.ilk, msg.sender);
         if ((int256(rate * art) / 10 ** 27) == dart) {
             EnumerableSet.remove(usersInDebt, msg.sender);
         }

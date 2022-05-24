@@ -37,6 +37,7 @@ interface IAuctionProxy {
   ) external returns (uint256 id);
 
   function buyFromAuction(
+    address user,
     uint256 auctionId,
     uint256 collateralAmount,
     uint256 maxPrice,
@@ -598,6 +599,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     CollateralType memory collateral = collaterals[token];
     address helioProvider = helioProviders[token];
     auctionProxy.buyFromAuction(
+      msg.sender,
       auctionId,
       collateralAmount,
       maxPrice,

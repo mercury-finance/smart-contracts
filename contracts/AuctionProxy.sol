@@ -182,6 +182,7 @@ contract AuctionProxy {
   }
 
   function buyFromAuction(
+    address user,
     uint256 auctionId,
     uint256 collateralAmount,
     uint256 maxPrice,
@@ -198,7 +199,7 @@ contract AuctionProxy {
 
     uint256 usbMaxAmount = (maxPrice * collateralAmount) / RAY;
 
-    usb.transferFrom(msg.sender, address(this), usbMaxAmount);
+    usb.transferFrom(user, address(this), usbMaxAmount);
     usbJoin.join(address(this), usbMaxAmount);
 
     vat.hope(address(collateral.clip));

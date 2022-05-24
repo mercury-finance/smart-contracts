@@ -66,19 +66,16 @@ interface VatLike {
   function urns(bytes32, address) external view returns (uint256, uint256);
 }
 
-interface GemJoinLike {
-  function join(address usr, uint256 wad) external;
-
-  function exit(address usr, uint256 wad) external;
-
-  function gem() external view returns (IERC20Upgradeable);
-}
-
 interface UsbGemLike {
   function join(address usr, uint256 wad) external;
 
   function exit(address usr, uint256 wad) external;
 }
+
+interface GemJoinLike is UsbGemLike {
+  function gem() external view returns (IERC20Upgradeable);
+}
+
 
 // solhint-disable-next-line no-empty-blocks
 interface UsbLike is IERC20Upgradeable {

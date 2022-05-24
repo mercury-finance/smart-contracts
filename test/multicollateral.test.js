@@ -4,8 +4,6 @@ const { ethers, network } = require('hardhat');
 const Web3 = require('web3');
 const {ether, expectRevert, BN, expectEvent} = require('@openzeppelin/test-helpers');
 
-const Interaction = artifacts.require('DAOInteraction');
-
 ///////////////////////////////////////////
 //Word of Notice: Commented means pending//
 //The test will be updated on daily basis//
@@ -63,6 +61,7 @@ describe('===INTERACTION2-Multicollateral===', function () {
         this.Vow = await ethers.getContractFactory("Vow");
         this.Rewards = await ethers.getContractFactory("HelioRewards");
         this.Helio = await ethers.getContractFactory("HelioToken");
+        this.Interaction = ethers.getContractFactory('DAOInteraction');
 
         // Core module
         vat = await this.Vat.connect(deployer).deploy();
@@ -108,8 +107,8 @@ describe('===INTERACTION2-Multicollateral===', function () {
         helio = await this.Helio.connect(deployer).deploy();
         await helio.deployed();
 
-        interaction = await Interaction.new({from: deployer.address});
-        await interaction.initialize(
+        interaction = await this.Interaction.connect(deployer).deploy();
+        await interaction.connect(deployer).initialize(
             vat.address,
             spot.address,
             usb.address,

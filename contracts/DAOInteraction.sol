@@ -129,14 +129,6 @@ interface JugLike {
   function base() external view returns (uint256);
 }
 
-interface HelioProviderLike {
-  function liquidation(address recipient, uint256 amount) external;
-
-  function daoBurn(address, uint256) external;
-
-  function daoMint(address, uint256) external;
-}
-
 interface Rewards {
   function deposit(address token, address usr) external;
 

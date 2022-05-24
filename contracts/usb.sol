@@ -34,7 +34,7 @@ contract Usb {
     }
 
     // --- ERC20 Data ---
-    string  public constant name     = "Usb Stablecoin";
+    string  public name;
     string  public symbol;
     string  public constant version  = "1";
     uint8   public constant decimals = 18;
@@ -64,7 +64,7 @@ contract Usb {
     // bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed)");
     bytes32 public constant PERMIT_TYPEHASH = 0xea2aa0a1be11a07ed86d755c93467f4f82362b452371d1ba94d1715123511acb;
 
-    constructor(uint256 chainId_, string memory symbol_) {
+    constructor(uint256 chainId_, string memory symbol_, string memory name_) {
         wards[msg.sender] = 1;
         DOMAIN_SEPARATOR = keccak256(abi.encode(
             keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
@@ -74,6 +74,7 @@ contract Usb {
             address(this)
         ));
         symbol = symbol_;
+        name = name_;
     }
 
     // --- Token ---

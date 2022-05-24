@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "./hMath.sol";
+import "./libraries/hMath.sol";
 
 struct Sale {
   uint256 pos; // Index in active array
@@ -278,14 +278,12 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
   function removeCollateralType(address token) external auth {
     collaterals[token].live = 0;
-    address gemJoin = address(collaterals[token].gem);
-    IERC20Upgradeable(token).approve(gemJoin, 0);
+    IERC20Upgradeable(token).approve(address(collaterals[token].gem), 0);
     emit CollateralDisabled(token, collaterals[token].ilk);
   }
 
   function stringToBytes32(string memory source) public pure returns (bytes32 result) {
-    bytes memory tempEmptyStringTest = bytes(source);
-    if (tempEmptyStringTest.length == 0) {
+    if (bytes(source).length == 0) {
       return 0x0;
     }
 
@@ -301,12 +299,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 dink
   ) external returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
     if (helioProviders[token] != address(0)) {
-      require(
-        msg.sender == helioProviders[token],
-        "Interaction/only helio provider can deposit for this token"
-      );
+      require(msg.sender == helioProviders[token], "Interaction/only helio provider");
     }
 
     drip(token);
@@ -326,25 +321,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     return dink;
   }
 
-  function _mul(uint256 x, int256 y) internal pure returns (int256 z) {
-    unchecked {
-      z = int256(x) * y;
-      require(int256(x) >= 0);
-      require(y == 0 || z / y == int256(x));
-    }
-  }
-
-  function _add(uint256 x, int256 y) internal pure returns (uint256 z) {
-    unchecked {
-      z = x + uint256(y);
-      require(y >= 0 || z <= x);
-      require(y <= 0 || z >= x);
-    }
-  }
-
   function borrow(address token, uint256 usbAmount) external returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     drip(token);
     (, uint256 rate, , , ) = vat.ilks(collateralType.ilk);
@@ -353,7 +332,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
       dart += 1; //ceiling
     }
     vat.frob(collateralType.ilk, msg.sender, msg.sender, msg.sender, 0, dart);
-    uint256 mulResult = rate * uint256(dart);
+    // uint256 mulResult = rate * uint256(dart);
     vat.move(msg.sender, address(this), usbAmount * ONE);
     usbJoin.exit(msg.sender, usbAmount);
 
@@ -367,9 +346,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // N.B. User collateral stays the same.
   function payback(address token, uint256 usbAmount) external returns (int256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
-    IERC20Upgradeable(usb).safeTransferFrom(msg.sender, address(this), usbAmount);
+    IERC20Upgradeable(usb).transferFrom(msg.sender, address(this), usbAmount);
     usbJoin.join(msg.sender, usbAmount);
     (, uint256 rate, , , ) = vat.ilks(collateralType.ilk);
     int256 dart = int256(hMath.mulDiv(usbAmount, 10**27, rate));
@@ -396,17 +375,11 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 dink
   ) external returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
     if (helioProviders[token] != address(0)) {
-      require(
-        msg.sender == helioProviders[token],
-        "Interaction/Only helio provider can call this function for this token"
-      );
+      require(msg.sender == helioProviders[token], "Interaction/Only helio provider");
     } else {
-      require(
-        msg.sender == participant,
-        "Interaction/Caller must be the same address as participant"
-      );
+      require(msg.sender == participant, "Caller is not participant");
     }
 
     uint256 unlocked = free(token, participant);
@@ -426,7 +399,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
   function drip(address token) public {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     jug.drip(collateralType.ilk);
   }
@@ -442,7 +415,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // Price of the collateral asset(aBNBc) from Oracle
   function collateralPrice(address token) public view returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     (PipLike pip, ) = spotter.ilks(collateralType.ilk);
     (bytes32 price, bool has) = pip.peek();
@@ -456,7 +429,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // Returns the USB price in $
   function usbPrice(address token) external view returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     (, uint256 rate, , , ) = vat.ilks(collateralType.ilk);
     return rate / 10**9;
@@ -465,7 +438,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // Returns the collateral ratio in percents with 18 decimals
   function collateralRate(address token) external view returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     (, uint256 mat) = spotter.ilks(collateralType.ilk);
 
@@ -482,7 +455,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // Total USB borrowed by all users
   function collateralTVL(address token) external view returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     // solhint-disable-next-line var-name-mixedcase
     (uint256 Art, , , , ) = vat.ilks(collateralType.ilk);
@@ -492,7 +465,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // Not locked user balance in aBNBc
   function free(address token, address usr) public view returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     return vat.gem(collateralType.ilk, usr);
   }
@@ -500,7 +473,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // User collateral in aBNBc
   function locked(address token, address usr) external view returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     (uint256 ink, ) = vat.urns(collateralType.ilk, usr);
     return ink;
@@ -509,7 +482,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // Total borrowed USB
   function borrowed(address token, address usr) external view returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     (, uint256 rate, , , ) = vat.ilks(collateralType.ilk);
     (, uint256 art) = vat.urns(collateralType.ilk, usr);
@@ -519,7 +492,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // Collateral minus borrowed. Basically free collateral (nominated in USB)
   function availableToBorrow(address token, address usr) external view returns (int256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     (uint256 ink, uint256 art) = vat.urns(collateralType.ilk, usr);
     (, uint256 rate, uint256 spot, , ) = vat.ilks(collateralType.ilk);
@@ -536,11 +509,11 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     int256 amount
   ) external view returns (int256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     (uint256 ink, uint256 art) = vat.urns(collateralType.ilk, usr);
     (, uint256 rate, uint256 spot, , ) = vat.ilks(collateralType.ilk);
-    require(amount >= -(int256(ink)), "Cannot withdraw more than current amount");
+    require(amount >= -(int256(ink)), "withdrawal more than amount");
     if (amount < 0) {
       ink = uint256(int256(ink) + amount);
     } else {
@@ -554,7 +527,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // Price of aBNBc when user will be liquidated
   function currentLiquidationPrice(address token, address usr) external view returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     (uint256 ink, uint256 art) = vat.urns(collateralType.ilk, usr);
     (, uint256 rate, , , ) = vat.ilks(collateralType.ilk);
@@ -570,16 +543,16 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     int256 amount
   ) external view returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     (uint256 ink, uint256 art) = vat.urns(collateralType.ilk, usr);
-    require(amount >= -(int256(ink)), "Cannot withdraw more than current amount");
+    require(amount >= -(int256(ink)), "withdrawal more than amount");
     if (amount < 0) {
       ink = uint256(int256(ink) + amount);
     } else {
       ink += uint256(amount);
     }
-    (, uint256 rate, uint256 spot, , ) = vat.ilks(collateralType.ilk);
+    (, uint256 rate, , , ) = vat.ilks(collateralType.ilk);
     (, uint256 mat) = spotter.ilks(collateralType.ilk);
     uint256 backedDebt = ((art * rate) / 10**36) * mat;
     return backedDebt / ink;
@@ -589,7 +562,7 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // I.e. 10% == 10 ethers
   function borrowApr(address token) public view returns (uint256) {
     CollateralType memory collateralType = collaterals[token];
-    require(collateralType.live == 1, "Interaction/inactive collateral");
+    _checkIsLive(collateralType.live);
 
     (uint256 duty, ) = jug.ilks(collateralType.ilk);
     uint256 principal = hMath.rpow((jug.base() + duty), 31536000, ONE);
@@ -610,9 +583,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     // Burn any derivative token (hBNB incase of ceabnbc collateral)
     if (helioProviders[token] != address(0)) {
-      CollateralType memory collateral = collaterals[token];
-      uint256 lot = collateral.clip.sales(id).lot;
-      HelioProviderLike(helioProviders[token]).daoBurn(user, lot);
+      // CollateralType memory collateral = collaterals[token];
+      // uint256 lot = collaterals[token].clip.sales(id).lot;
+      HelioProviderLike(helioProviders[token]).daoBurn(user, collaterals[token].clip.sales(id).lot);
     }
   }
 
@@ -663,10 +636,6 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
   }
 
-  function getTotalAuctionsCountForToken(address token) public view returns (uint256) {
-    return collaterals[token].clip.kicks();
-  }
-
   function getAllActiveAuctionsForToken(address token) public view returns (Sale[] memory sales) {
     ClipperLike clip = collaterals[token].clip;
     uint256[] memory auctionIds = clip.list();
@@ -683,5 +652,9 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
   function totalPegLiquidity() external view returns (uint256) {
     return IERC20Upgradeable(usb).totalSupply();
+  }
+
+  function _checkIsLive(uint256 live) internal pure {
+    require(live == 1, "Interaction/inactive collateral");
   }
 }

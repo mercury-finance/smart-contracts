@@ -287,7 +287,7 @@ xdescribe("Auction", () => {
     // We want to draw 60 USB == `dart`
     // Maximum available for borrow = (1000 * 400) * 0.8 = 320000
     let dart = toWad("70");
-    await interaction.connect(signer1).borrow(signer1.address, abnbc.address, dart);
+    await interaction.connect(signer1).borrow(abnbc.address, dart);
 
     free = await interaction.connect(signer1).free(abnbc.address, signer1.address);
     expect(free).to.equal("0");
@@ -340,7 +340,7 @@ xdescribe("Auction", () => {
     // Deposit collateral(aBNBc) to the interaction contract
     await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink);
     const dart = toWad("1000");
-    await interaction.connect(signer1).borrow(signer1.address, abnbc.address, dart);
+    await interaction.connect(signer1).borrow(abnbc.address, dart);
 
     // change collateral price
     await oracle.connect(deployer).setPrice(toWad("124"));
@@ -371,9 +371,9 @@ xdescribe("Auction", () => {
     const dart1 = toWad("1000");
     const dart2 = toWad("5000");
     const dart3 = toWad("5000");
-    await interaction.connect(signer1).borrow(signer1.address, abnbc.address, dart1);
-    await interaction.connect(signer2).borrow(signer2.address, abnbc.address, dart2);
-    await interaction.connect(signer3).borrow(signer3.address, abnbc.address, dart3);
+    await interaction.connect(signer1).borrow(abnbc.address, dart1);
+    await interaction.connect(signer2).borrow(abnbc.address, dart2);
+    await interaction.connect(signer3).borrow(abnbc.address, dart3);
 
     await oracle.connect(deployer).setPrice(toWad("124"));
     await spot.connect(deployer).poke(collateral);
@@ -424,9 +424,9 @@ xdescribe("Auction", () => {
     const dart1 = toWad("1000");
     const dart2 = toWad("5000");
     const dart3 = toWad("5000");
-    await interaction.connect(signer1).borrow(signer1.address, abnbc.address, dart1);
-    await interaction.connect(signer2).borrow(signer2.address, abnbc.address, dart2);
-    await interaction.connect(signer3).borrow(signer3.address, abnbc.address, dart3);
+    await interaction.connect(signer1).borrow(abnbc.address, dart1);
+    await interaction.connect(signer2).borrow(abnbc.address, dart2);
+    await interaction.connect(signer3).borrow(abnbc.address, dart3);
 
     await oracle.connect(deployer).setPrice(toWad("124"));
     await spot.connect(deployer).poke(collateral);

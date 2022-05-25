@@ -77,7 +77,7 @@ contract SlidingWindowOracle {
   // update the cumulative price for the observation at the current timestamp. each observation is updated at most
   // once per epoch period.
   function update(address tokenA, address tokenB) external {
-    address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
+    address pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
 
     // populate the array with empty observations (first call only)
     for (uint256 i = pairObservations[pair].length; i < granularity; i++) {
@@ -126,7 +126,7 @@ contract SlidingWindowOracle {
     uint256 amountIn,
     address tokenOut
   ) external view returns (uint256 amountOut) {
-    address pair = UniswapV2Library.pairFor(factory, tokenIn, tokenOut);
+    address pair = IUniswapV2Factory(factory).getPair(tokenIn, tokenOut);
     Observation storage firstObservation = getFirstObservationInWindow(pair);
 
     uint256 timeElapsed;

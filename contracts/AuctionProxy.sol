@@ -148,8 +148,7 @@ contract AuctionProxy {
     _;
   }
 
-  constructor(address _dao) {
-    dao = _dao;
+  constructor() {
     wards[msg.sender] = 1;
   }
 

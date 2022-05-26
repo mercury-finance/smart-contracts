@@ -152,7 +152,6 @@ contract AuctionProxy {
     wards[msg.sender] = 1;
   }
 
-  // TODO: maybe need to be removed
   function setDao(address _dao) external auth {
     dao = _dao;
   }

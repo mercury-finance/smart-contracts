@@ -259,7 +259,7 @@ describe("Auction", () => {
 
   const configureAuctionProxy = async () => {
     await auctionProxy.setDao(interaction.address);
-  }
+  };
 
   const configureInteraction = async () => {
     await interaction
@@ -289,214 +289,267 @@ describe("Auction", () => {
     await networkSnapshotter.snapshot();
   });
 
-  afterEach("revert", async () => await networkSnapshotter.revert());
+  afterEach("back to the snapshot", async () => await networkSnapshotter.revert());
 
-  xit("example", async () => {
-    await abnbc.connect(deployer).mint(signer1.address, toWad("10000"));
-    // Approve and send some collateral inside. collateral value == 400 == `dink`
-    let dink = toWad("1000");
+  describe("should revert if caller is not dao", () => {
+    it("startAuction", async () => {
+      await expect(
+        auctionProxy.startAuction(
+          signer1.address,
+          signer2.address,
+          usb.address,
+          usbJoin.address,
+          vat.address,
+          dog.address,
+          ethers.constants.AddressZero,
+          {
+            gem: abnbcJoin.address,
+            ilk: collateral,
+            live: 1,
+            clip: clip.address,
+          }
+        )
+      ).to.eventually.be.rejectedWith(Error, "Only dao contract can call");
+    });
 
-    await abnbc.connect(signer1).approve(interaction.address, dink);
-    // Deposit collateral(aBNBc) to the interaction contract
-    await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink);
-
-    let s1Balance = await abnbc.balanceOf(signer1.address);
-    expect(s1Balance).to.equal(toWad("9000"));
-
-    let s1USBBalance = await usb.balanceOf(signer1.address);
-    expect(s1USBBalance).to.equal("0");
-
-    let free = await interaction.connect(signer1).free(abnbc.address, signer1.address);
-    expect(free).to.equal("0");
-    let locked = await interaction.connect(signer1).locked(abnbc.address, signer1.address);
-    expect(locked).to.equal(toWad("1000"));
-
-    // Locking collateral and borrowing USB
-    // We want to draw 60 USB == `dart`
-    // Maximum available for borrow = (1000 * 400) * 0.8 = 320000
-    let dart = toWad("70");
-    await interaction.connect(signer1).borrow(abnbc.address, dart);
-
-    free = await interaction.connect(signer1).free(abnbc.address, signer1.address);
-    expect(free).to.equal("0");
-    locked = await interaction.connect(signer1).locked(abnbc.address, signer1.address);
-    expect(locked).to.equal(dink);
-    s1USBBalance = await usb.balanceOf(signer1.address);
-    expect(s1USBBalance).to.equal(dart);
-
-    // User locked 1000 aBNBc with price 400 and rate 0.8 == 320000$ collateral worth
-    // Borrowed 70$ => available should equal to 320000 - 70 = 319930.
-    let available = await interaction
-      .connect(signer1)
-      .availableToBorrow(abnbc.address, signer1.address);
-    expect(available).to.equal(toWad("319930"));
-
-    // 1000 * 0.0875 * 0.8 == 70$
-    let liquidationPrice = await interaction
-      .connect(signer1)
-      .currentLiquidationPrice(abnbc.address, signer1.address);
-    expect(liquidationPrice).to.equal(toWad("0.0875"));
-
-    // (1000 + 1000) * 0.04375 * 0.8 == 70$
-    let estLiquidationPrice = await interaction
-      .connect(signer1)
-      .estimatedLiquidationPrice(abnbc.address, signer1.address, toWad("1000"));
-    expect(estLiquidationPrice).to.equal(toWad("0.04375"));
-
-    let availableYear = await interaction
-      .connect(signer1)
-      .availableToBorrow(abnbc.address, signer1.address);
-
-    console.log(availableYear.toString());
-
-    // Update Stability Fees
-    await advanceTime(31536000);
-    await interaction.connect(signer1).drip(abnbc.address);
-
-    availableYear = await interaction
-      .connect(signer1)
-      .availableToBorrow(abnbc.address, signer1.address);
-    console.log(availableYear.toString());
+    it("buyFromAuction", async () => {
+      await expect(
+        auctionProxy.buyFromAuction(
+          signer1.address,
+          1,
+          10000000,
+          100000000,
+          signer2.address,
+          usb.address,
+          usbJoin.address,
+          vat.address,
+          ethers.constants.AddressZero,
+          {
+            gem: abnbcJoin.address,
+            ilk: collateral,
+            live: 1,
+            clip: clip.address,
+          }
+        )
+      ).to.eventually.be.rejectedWith(Error, "Only dao contract can call");
+    });
   });
 
-  it("auction started as expected", async () => {
-    await abnbc.connect(deployer).mint(signer1.address, toWad("10000"));
-    // Approve and send some collateral inside. collateral value == 400 == `dink`
-    const dink = toWad("10");
+  describe("revert cases", () => {
+    it("cannot start auction if not needed", async () => {
+      await expect(
+        interaction.startAuction(abnbc.address, signer1.address, deployer.address)
+      ).to.eventually.be.rejectedWith(Error, "Dog/not-unsafe");
+    });
 
-    await abnbc.connect(signer1).approve(interaction.address, dink);
-    // Deposit collateral(aBNBc) to the interaction contract
-    await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink);
-    const dart = toWad("1000");
-    await interaction.connect(signer1).borrow(abnbc.address, dart);
+    it("cannot buy from auction if user has not enough balance", async () => {
+      const auctionId = 1;
+      await expect(
+        interaction.buyFromAuction(
+          abnbc.address,
+          auctionId,
+          toWad("7"),
+          toWad("100"),
+          signer2.address
+        )
+      ).to.eventually.be.rejectedWith(Error, "Usb/insufficient-balance");
+    });
 
-    // change collateral price
-    await oracle.connect(deployer).setPrice(toWad("124"));
-    await spot.connect(deployer).poke(collateral);
-    await interaction
-      .connect(deployer)
-      .startAuction(abnbc.address, signer1.address, deployer.address);
+    it("cannot buy from auction if user has not approved to AuctionProxy address", async () => {
+      await abnbc.connect(deployer).mint(signer1.address, toWad("10000"));
+      const dink1 = toWad("10");
+      await abnbc.connect(signer1).approve(interaction.address, dink1);
+      await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink1);
+      const dart1 = toWad("1000");
+      await interaction.connect(signer1).borrow(abnbc.address, dart1);
 
-    const sale = await clip.sales(1);
-    expect(sale.usr).to.not.be.equal(ethers.constants.AddressZero);
+      const auctionId = 1;
+      await expect(
+        interaction
+          .connect(signer1)
+          .buyFromAuction(abnbc.address, auctionId, toWad("7"), toWad("100"), signer2.address)
+      ).to.eventually.be.rejectedWith(Error, "Usb/insufficient-allowance");
+    });
+
+    it("cannot buy from non existing auction", async () => {
+      await abnbc.connect(deployer).mint(signer1.address, toWad("10000"));
+
+      const dink1 = toWad("10");
+      await abnbc.connect(signer1).approve(interaction.address, dink1);
+      await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink1);
+
+      const dart1 = toWad("1000");
+      await interaction.connect(signer1).borrow(abnbc.address, dart1);
+
+      await usb.connect(signer1).approve(auctionProxy.address, toWad("700"));
+
+      const auctionId = 1;
+      await expect(
+        interaction
+          .connect(signer1)
+          .buyFromAuction(abnbc.address, auctionId, toWad("7"), toWad("100"), signer2.address)
+      ).to.eventually.be.rejectedWith(Error, "Clipper/not-running-auction");
+    });
+
+    it("cannot buy if auction already ended", async () => {
+      await abnbc.connect(deployer).mint(signer1.address, toWad("10000"));
+      await abnbc.connect(deployer).mint(signer2.address, toWad("10000"));
+      await abnbc.connect(deployer).mint(signer3.address, toWad("10000"));
+
+      const dink1 = toWad("10");
+      const dink2 = toWad("1000");
+      const dink3 = toWad("1000");
+      await abnbc.connect(signer1).approve(interaction.address, dink1);
+      await abnbc.connect(signer2).approve(interaction.address, dink2);
+      await abnbc.connect(signer3).approve(interaction.address, dink3);
+      await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink1);
+      await interaction.connect(signer2).deposit(signer2.address, abnbc.address, dink2);
+      await interaction.connect(signer3).deposit(signer3.address, abnbc.address, dink3);
+
+      const dart1 = toWad("1000");
+      const dart2 = toWad("5000");
+      const dart3 = toWad("5000");
+      await interaction.connect(signer1).borrow(abnbc.address, dart1);
+      await interaction.connect(signer2).borrow(abnbc.address, dart2);
+      await interaction.connect(signer3).borrow(abnbc.address, dart3);
+
+      await oracle.connect(deployer).setPrice(toWad("124"));
+      await spot.connect(deployer).poke(collateral);
+
+      const auctionId = BigNumber.from(1);
+
+      let res = await interaction
+        .connect(deployer)
+        .startAuction(abnbc.address, signer1.address, deployer.address);
+      expect(res).to.emit(clip, "Kick");
+
+      await vat.connect(signer2).hope(clip.address);
+      await vat.connect(signer3).hope(clip.address);
+
+      await usb.connect(signer2).approve(auctionProxy.address, toWad("10000000000"));
+      await usb.connect(signer3).approve(auctionProxy.address, toWad("10000000000"));
+
+      await advanceTime(1000);
+
+      await interaction
+        .connect(signer2)
+        .buyFromAuction(abnbc.address, auctionId, toWad("7"), toWad("100"), signer2.address);
+
+      await interaction
+        .connect(signer3)
+        .buyFromAuction(abnbc.address, auctionId, toWad("5"), toWad("100"), signer3.address);
+
+      const sale = await clip.sales(auctionId);
+      expect(sale.pos).to.equal(0);
+      expect(sale.tab).to.equal(0);
+      expect(sale.lot).to.equal(0);
+      expect(sale.tic).to.equal(0);
+      expect(sale.top).to.equal(0);
+      expect(sale.usr).to.equal(ethers.constants.AddressZero);
+
+      await expect(
+        interaction
+          .connect(signer2)
+          .buyFromAuction(abnbc.address, auctionId, toWad("7"), toWad("100"), signer2.address)
+      ).to.eventually.be.rejectedWith(Error, "Clipper/not-running-auction");
+    });
   });
 
-  xit("auction works as expected", async () => {
-    await abnbc.connect(deployer).mint(signer1.address, toWad("10000"));
-    await abnbc.connect(deployer).mint(signer2.address, toWad("10000"));
-    await abnbc.connect(deployer).mint(signer3.address, toWad("10000"));
+  describe("good cases", () => {
+    describe("without helioProvider", () => {
+      it("auction started as expected", async () => {
+        await abnbc.connect(deployer).mint(signer1.address, toWad("10000"));
+        // Approve and send some collateral inside. collateral value == 400 == `dink`
+        const dink = toWad("10");
 
-    const dink1 = toWad("10");
-    const dink2 = toWad("1000");
-    const dink3 = toWad("1000");
-    await abnbc.connect(signer1).approve(interaction.address, dink1);
-    await abnbc.connect(signer2).approve(interaction.address, dink2);
-    await abnbc.connect(signer3).approve(interaction.address, dink3);
-    await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink1);
-    await interaction.connect(signer2).deposit(signer2.address, abnbc.address, dink2);
-    await interaction.connect(signer3).deposit(signer3.address, abnbc.address, dink3);
+        await abnbc.connect(signer1).approve(interaction.address, dink);
+        // Deposit collateral(aBNBc) to the interaction contract
+        await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink);
+        const dart = toWad("1000");
+        await interaction.connect(signer1).borrow(abnbc.address, dart);
 
-    const dart1 = toWad("1000");
-    const dart2 = toWad("5000");
-    const dart3 = toWad("5000");
-    await interaction.connect(signer1).borrow(abnbc.address, dart1);
-    await interaction.connect(signer2).borrow(abnbc.address, dart2);
-    await interaction.connect(signer3).borrow(abnbc.address, dart3);
+        const usbBalanceBefore = await usb.balanceOf(deployer.address);
 
-    await oracle.connect(deployer).setPrice(toWad("124"));
-    await spot.connect(deployer).poke(collateral);
+        // change collateral price
+        await oracle.connect(deployer).setPrice(toWad("124"));
+        await spot.connect(deployer).poke(collateral);
+        await interaction
+          .connect(deployer)
+          .startAuction(abnbc.address, signer1.address, deployer.address);
 
-    const auctionId = BigNumber.from(1);
+        const sale = await clip.sales(1);
+        expect(sale.usr).to.not.be.equal(ethers.constants.AddressZero);
 
-    let res = await interaction
-      .connect(deployer)
-      .startAuction(abnbc.address, signer1.address, deployer.address);
-    expect(res).to.emit(clip, "Kick");
+        const usbBalanceAfter = await usb.balanceOf(deployer.address);
+        const tip = await clip.tip();
+        expect(usbBalanceAfter.gte(usbBalanceBefore.add(tip.div(ray)))).to.be.true;
+      });
 
-    await vat.connect(signer2).hope(clip.address);
-    await vat.connect(signer3).hope(clip.address);
+      it("auction works as expected", async () => {
+        await abnbc.connect(deployer).mint(signer1.address, toWad("10000"));
+        await abnbc.connect(deployer).mint(signer2.address, toWad("10000"));
+        await abnbc.connect(deployer).mint(signer3.address, toWad("10000"));
 
-    await usb.connect(signer2).approve(usbJoin.address, ethers.constants.MaxUint256);
-    await usb.connect(signer3).approve(usbJoin.address, ethers.constants.MaxUint256);
-    await usbJoin.connect(signer2).join(signer2.address, toWad("5000"));
-    await usbJoin.connect(signer3).join(signer3.address, toWad("5000"));
+        const dink1 = toWad("10");
+        const dink2 = toWad("1000");
+        const dink3 = toWad("1000");
+        await abnbc.connect(signer1).approve(interaction.address, dink1);
+        await abnbc.connect(signer2).approve(interaction.address, dink2);
+        await abnbc.connect(signer3).approve(interaction.address, dink3);
+        await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink1);
+        await interaction.connect(signer2).deposit(signer2.address, abnbc.address, dink2);
+        await interaction.connect(signer3).deposit(signer3.address, abnbc.address, dink3);
 
-    await clip.connect(signer2).take(auctionId, toWad("7"), toRay("500"), signer2.address, []);
+        const dart1 = toWad("1000");
+        const dart2 = toWad("5000");
+        const dart3 = toWad("5000");
+        await interaction.connect(signer1).borrow(abnbc.address, dart1);
+        await interaction.connect(signer2).borrow(abnbc.address, dart2);
+        await interaction.connect(signer3).borrow(abnbc.address, dart3);
 
-    await clip.connect(signer3).take(auctionId, toWad("7"), toRay("500"), signer2.address, []);
+        await oracle.connect(deployer).setPrice(toWad("124"));
+        await spot.connect(deployer).poke(collateral);
 
-    const sale = await clip.sales(auctionId);
-    expect(sale.pos).to.equal(0);
-    expect(sale.tab).to.equal(0);
-    expect(sale.lot).to.equal(0);
-    expect(sale.tic).to.equal(0);
-    expect(sale.top).to.equal(0);
-    expect(sale.usr).to.equal(ethers.constants.AddressZero);
-  });
+        const auctionId = BigNumber.from(1);
 
-  it("auction works as expected", async () => {
-    await abnbc.connect(deployer).mint(signer1.address, toWad("10000"));
-    await abnbc.connect(deployer).mint(signer2.address, toWad("10000"));
-    await abnbc.connect(deployer).mint(signer3.address, toWad("10000"));
+        let res = await interaction
+          .connect(deployer)
+          .startAuction(abnbc.address, signer1.address, deployer.address);
+        expect(res).to.emit(clip, "Kick");
 
-    const dink1 = toWad("10");
-    const dink2 = toWad("1000");
-    const dink3 = toWad("1000");
-    await abnbc.connect(signer1).approve(interaction.address, dink1);
-    await abnbc.connect(signer2).approve(interaction.address, dink2);
-    await abnbc.connect(signer3).approve(interaction.address, dink3);
-    await interaction.connect(signer1).deposit(signer1.address, abnbc.address, dink1);
-    await interaction.connect(signer2).deposit(signer2.address, abnbc.address, dink2);
-    await interaction.connect(signer3).deposit(signer3.address, abnbc.address, dink3);
+        await vat.connect(signer2).hope(clip.address);
+        await vat.connect(signer3).hope(clip.address);
 
-    const dart1 = toWad("1000");
-    const dart2 = toWad("5000");
-    const dart3 = toWad("5000");
-    await interaction.connect(signer1).borrow(abnbc.address, dart1);
-    await interaction.connect(signer2).borrow(abnbc.address, dart2);
-    await interaction.connect(signer3).borrow(abnbc.address, dart3);
+        await usb.connect(signer2).approve(auctionProxy.address, toWad("70000000000"));
+        await usb.connect(signer3).approve(auctionProxy.address, toWad("70000000000"));
 
-    await oracle.connect(deployer).setPrice(toWad("124"));
-    await spot.connect(deployer).poke(collateral);
+        await advanceTime(1000);
 
-    const auctionId = BigNumber.from(1);
+        const abnbcSigner2BalanceBefore = await abnbc.balanceOf(signer2.address);
+        const abnbcSigner3BalanceBefore = await abnbc.balanceOf(signer3.address);
 
-    let res = await interaction
-      .connect(deployer)
-      .startAuction(abnbc.address, signer1.address, deployer.address);
-    expect(res).to.emit(clip, "Kick");
+        await interaction
+          .connect(signer2)
+          .buyFromAuction(abnbc.address, auctionId, toWad("7"), toWad("100"), signer2.address);
 
-    await vat.connect(signer2).hope(clip.address);
-    await vat.connect(signer3).hope(clip.address);
+        await interaction
+          .connect(signer3)
+          .buyFromAuction(abnbc.address, auctionId, toWad("7"), toWad("100"), signer3.address);
 
-    await usb.connect(signer2).approve(interaction.address, toWad("700"));
-    await usb.connect(signer3).approve(interaction.address, toWad("700"));
+        const abnbcSigner2BalanceAfter = await abnbc.balanceOf(signer2.address);
+        const abnbcSigner3BalanceAfter = await abnbc.balanceOf(signer3.address);
 
-    await advanceTime(1000);
+        expect(abnbcSigner2BalanceAfter.sub(abnbcSigner2BalanceBefore)).to.be.equal(toWad("7"));
+        expect(abnbcSigner3BalanceAfter.sub(abnbcSigner3BalanceBefore)).to.be.equal(toWad("3"));
 
-    const abnbcSigner2BalanceBefore = await abnbc.balanceOf(signer2.address);
-    const abnbcSigner3BalanceBefore = await abnbc.balanceOf(signer3.address);
-
-    await interaction
-      .connect(signer2)
-      .buyFromAuction(abnbc.address, auctionId, toWad("7"), toRay("100"), signer2.address);
-
-    await interaction
-      .connect(signer3)
-      .buyFromAuction(abnbc.address, auctionId, toWad("5"), toRay("100"), signer3.address);
-
-    const abnbcSigner2BalanceAfter = await abnbc.balanceOf(signer2.address);
-    const abnbcSigner3BalanceAfter = await abnbc.balanceOf(signer3.address);
-
-    expect(abnbcSigner2BalanceAfter.sub(abnbcSigner2BalanceBefore)).to.be.equal(toWad("7"));
-    expect(abnbcSigner3BalanceAfter.sub(abnbcSigner3BalanceBefore)).to.be.equal(toWad("3"));
-
-    const sale = await clip.sales(auctionId);
-    expect(sale.pos).to.equal(0);
-    expect(sale.tab).to.equal(0);
-    expect(sale.lot).to.equal(0);
-    expect(sale.tic).to.equal(0);
-    expect(sale.top).to.equal(0);
-    expect(sale.usr).to.equal(ethers.constants.AddressZero);
+        const sale = await clip.sales(auctionId);
+        expect(sale.pos).to.equal(0);
+        expect(sale.tab).to.equal(0);
+        expect(sale.lot).to.equal(0);
+        expect(sale.tic).to.equal(0);
+        expect(sale.top).to.equal(0);
+        expect(sale.usr).to.equal(ethers.constants.AddressZero);
+      });
+    });
   });
 });

@@ -8,10 +8,14 @@ import { toWad, toRay, toRad, advanceTime } from "./helpers/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   ABNBc,
+  ABNBc__factory,
+  AuctionProxy,
   Clipper,
   DAOInteraction,
   Dog,
   GemJoin,
+  HelioRewards,
+  HelioToken,
   Jug,
   LinearDecrease,
   Oracle,
@@ -34,7 +38,7 @@ const wad = ten.pow(18);
 const ray = ten.pow(27);
 const rad = ten.pow(45);
 
-xdescribe("Auction", () => {
+describe("Auction", () => {
   const networkSnapshotter = new NetworkSnapshotter();
 
   let deployer: SignerWithAddress;
@@ -53,6 +57,9 @@ xdescribe("Auction", () => {
   let clip: Clipper;
   let dog: Dog;
   let vow: Vow;
+  let helioToken: HelioToken;
+  let rewards: HelioRewards;
+  let auctionProxy: AuctionProxy;
   let interaction: DAOInteraction;
 
   const collateral = toBytes32("aBNBc");
@@ -61,7 +68,7 @@ xdescribe("Auction", () => {
     const Vat = await ethers.getContractFactory("Vat");
     const Spot = await ethers.getContractFactory("Spotter");
     const Usb = await ethers.getContractFactory("Usb");
-    const ABNBC = await ethers.getContractFactory("ABNBc");
+    const ABNBC: ABNBc__factory = (await ethers.getContractFactory("aBNBc")) as ABNBc__factory;
     const GemJoin = await ethers.getContractFactory("GemJoin");
     const UsbJoin = await ethers.getContractFactory("UsbJoin");
     const Jug = await ethers.getContractFactory("Jug");
@@ -72,6 +79,7 @@ xdescribe("Auction", () => {
     const Vow = await ethers.getContractFactory("Vow");
     const HelioToken = await ethers.getContractFactory("HelioToken");
     const HelioRewards = await ethers.getContractFactory("HelioRewards");
+    const AuctionProxy = await ethers.getContractFactory("AuctionProxy");
     const DAOInteraction = await ethers.getContractFactory("DAOInteraction");
 
     // Abacus
@@ -83,15 +91,6 @@ xdescribe("Auction", () => {
     await vat.deployed();
     spot = await Spot.connect(deployer).deploy(vat.address);
     await spot.deployed();
-
-    const helioToken = await HelioToken.connect(deployer).deploy();
-    await helioToken.deployed();
-    const rewards = await HelioRewards.connect(deployer).deploy(vat.address);
-    await rewards.deployed();
-
-    await helioToken.rely(rewards.address);
-    await rewards.setHelioToken(helioToken.address);
-    await rewards.initPool(helioToken.address, collateral, "1000000001847694957439350500"); //6%
 
     // Usb module
     usb = await Usb.connect(deployer).deploy(97, "USB");
@@ -133,6 +132,17 @@ xdescribe("Auction", () => {
     );
     await vow.deployed();
 
+    // helioToken
+    helioToken = await HelioToken.deploy();
+    await helioToken.deployed();
+
+    // helioRewards
+    rewards = await HelioRewards.deploy(vat.address);
+    await rewards.deployed();
+
+    // auctionProxy
+    auctionProxy = await AuctionProxy.deploy();
+
     interaction = (await upgrades.deployProxy(DAOInteraction, [
       vat.address,
       spot.address,
@@ -141,6 +151,7 @@ xdescribe("Auction", () => {
       jug.address,
       dog.address,
       rewards.address,
+      auctionProxy.address,
     ])) as DAOInteraction;
   };
 
@@ -157,6 +168,7 @@ xdescribe("Auction", () => {
     await vat.connect(deployer).rely(usbJoin.address);
     await vat.connect(deployer).rely(spot.address);
     await vat.connect(deployer).rely(jug.address);
+    await vat.connect(deployer).rely(auctionProxy.address);
     await vat.connect(deployer).rely(interaction.address);
     await vat.connect(deployer).rely(dog.address);
     await vat.connect(deployer).rely(clip.address);
@@ -235,6 +247,20 @@ xdescribe("Auction", () => {
     await jug.connect(deployer)["file(bytes32,address)"](toBytes32("vow"), vow.address);
   };
 
+  const configureHelioToken = async () => {
+    await helioToken.rely(rewards.address);
+  };
+
+  const configureHelioRewards = async () => {
+    await rewards.setHelioToken(helioToken.address);
+    await rewards.initPool(abnbc.address, collateral, "1000000001847694957439350500"); //6%
+    await rewards.connect(deployer).rely(interaction.address);
+  };
+
+  const configureAuctionProxy = async () => {
+    await auctionProxy.setDao(interaction.address);
+  }
+
   const configureInteraction = async () => {
     await interaction
       .connect(deployer)
@@ -255,6 +281,9 @@ xdescribe("Auction", () => {
     await configureClippers();
     await configureVow();
     await configureJug();
+    await configureHelioToken();
+    await configureHelioRewards();
+    await configureAuctionProxy();
     await configureInteraction();
 
     await networkSnapshotter.snapshot();
@@ -352,7 +381,7 @@ xdescribe("Auction", () => {
     expect(sale.usr).to.not.be.equal(ethers.constants.AddressZero);
   });
 
-  it("auction works as expected", async () => {
+  xit("auction works as expected", async () => {
     await abnbc.connect(deployer).mint(signer1.address, toWad("10000"));
     await abnbc.connect(deployer).mint(signer2.address, toWad("10000"));
     await abnbc.connect(deployer).mint(signer3.address, toWad("10000"));

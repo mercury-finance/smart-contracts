@@ -167,6 +167,7 @@ contract AuctionProxy {
     HelioProviderLike helioProvider,
     CollateralType calldata collateral
   ) external onlyDao returns (uint256 id) {
+    vat.hope(address(usbJoin));
     uint256 usbBal = usb.balanceOf(address(this));
     id = dog.bark(collateral.ilk, user, address(this));
 

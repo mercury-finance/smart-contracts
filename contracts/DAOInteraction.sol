@@ -24,6 +24,8 @@ struct CollateralType {
   address clip;
 }
 
+uint256 constant ONE = 10**27;
+
 interface IAuctionProxy {
   function startAuction(
     address user,
@@ -175,9 +177,6 @@ contract DAOInteraction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   using EnumerableSet for EnumerableSet.AddressSet;
 
   EnumerableSet.AddressSet private usersInDebt;
-
-  uint256 internal constant ONE = 10**27;
-  uint256 internal constant RAY = 10**27;
 
   mapping(address => address) public helioProviders; // e.g. Auction purchase from ceabnbc to abnbc
 

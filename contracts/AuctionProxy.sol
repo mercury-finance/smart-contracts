@@ -123,6 +123,7 @@ struct Sale {
 }
 
 uint256 constant RAY = 10**27;
+uint256 constant WAD = 10**18;
 
 contract AuctionProxy {
   using SafeERC20 for IERC20;
@@ -196,15 +197,15 @@ contract AuctionProxy {
     uint256 usbBal = usb.balanceOf(address(this));
     uint256 gemBal = collateral.gem.gem().balanceOf(address(this));
 
-    uint256 usbMaxAmount = (maxPrice * collateralAmount) / RAY;
-
+    uint256 usbMaxAmount = (maxPrice * collateralAmount) / WAD;
+    usb.approve(address(usbJoin), usbMaxAmount);
     usb.transferFrom(user, address(this), usbMaxAmount);
     usbJoin.join(address(this), usbMaxAmount);
 
     vat.hope(address(collateral.clip));
     address urn = collateral.clip.sales(auctionId).usr; // Liquidated address
     uint256 leftover = vat.gem(collateral.ilk, urn); // userGemBalanceBefore
-    collateral.clip.take(auctionId, collateralAmount, maxPrice, address(this), "");
+    collateral.clip.take(auctionId, collateralAmount, maxPrice * 10**9, address(this), "");
     leftover = vat.gem(collateral.ilk, urn) - leftover; // leftover
 
     collateral.gem.exit(address(this), vat.gem(collateral.ilk, address(this)));

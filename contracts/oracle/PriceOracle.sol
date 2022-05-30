@@ -8,8 +8,8 @@ import { IMovingWindowOracle } from "../interfaces/IMovingWindowOracle.sol";
 contract PriceOracle {
   // FIXME: Uncomment for mainnet
   // address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c; // WBNB MAINNET
-  // address public constant USD = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56; // BUSD TESTNET
-  // address public constant USD = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d; // USDC TESTNET
+  // address public constant USD = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56; // BUSD MAINNET
+  // address public constant USD = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d; // USDC MAINNET
   ///////////////////////////////////////////////////////
 
   // FIXME: need to be removed for mainnet

@@ -63,10 +63,19 @@ const config: HardhatUserConfig = {
       chainId: 97,
       accounts: privateKeys,
     },
+
+    mumbai: {
+      url: "https://speedy-nodes-nyc.moralis.io/a82255cab4737f6642dbf89d/polygon/mumbai",
+      accounts: privateKeys,
+    },
   },
 
   etherscan: {
-    apiKey: process.env.BSC_API_KEY,
+    apiKey: {
+      bsc: process.env.BSC_API_KEY,
+      bscTestnet: process.env.BSC_API_KEY,
+      polygonMumbai: process.env.POLYGON_API_KEY
+    },
   },
 
   contractSizer: {

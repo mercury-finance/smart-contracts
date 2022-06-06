@@ -18,7 +18,10 @@ import {
   HelioToken,
   Jug,
   LinearDecrease,
+  MockERC20,
+  MockHelioProvider,
   Oracle,
+  SlidingWindowOracle,
   Spotter,
   Usb,
   UsbJoin,
@@ -81,6 +84,8 @@ describe("Auction", () => {
     const HelioRewards = await ethers.getContractFactory("HelioRewards");
     const AuctionProxy = await ethers.getContractFactory("AuctionProxy");
     const DAOInteraction = await ethers.getContractFactory("DAOInteraction");
+    const PriceOracle = await ethers.getContractFactory("PriceOracle");
+    const PancakeOracle = await ethers.getContractFactory("SlidingWindowOracle");
 
     // Abacus
     abacus = await LinearDecrease.connect(deployer).deploy();
@@ -153,6 +158,20 @@ describe("Auction", () => {
       rewards.address,
       auctionProxy.address,
     ])) as DAOInteraction;
+
+    // const pancakeOracle = (await upgrades.deployProxy(
+    //   PancakeOracle,
+    //   [ethers.constants.AddressZero, 10000, 10],
+    //   { kind: "uups" }
+    // )) as SlidingWindowOracle;
+    // console.log(pancakeOracle.address);
+    
+    // const priceOracle = (await upgrades.deployProxy(
+    //   PriceOracle,
+    //   [abnbc.address, pancakeOracle.address, true],
+    //   { kind: "uups" }
+    // )) as SlidingWindowOracle;
+    // console.log(priceOracle.address);
   };
 
   const configureAbacus = async () => {
@@ -172,10 +191,10 @@ describe("Auction", () => {
     await vat.connect(deployer).rely(interaction.address);
     await vat.connect(deployer).rely(dog.address);
     await vat.connect(deployer).rely(clip.address);
-    await vat.connect(deployer)["file(bytes32,uint256)"](toBytes32("Line"), toRad("20000")); // Normalized USB
+    await vat.connect(deployer)["file(bytes32,uint256)"](toBytes32("Line"), toRad("2000000")); // Normalized USB
     await vat
       .connect(deployer)
-      ["file(bytes32,bytes32,uint256)"](collateral, toBytes32("line"), toRad("20000"));
+      ["file(bytes32,bytes32,uint256)"](collateral, toBytes32("line"), toRad("2000000"));
     await vat
       .connect(deployer)
       ["file(bytes32,bytes32,uint256)"](collateral, toBytes32("dust"), toRad("1"));
@@ -541,6 +560,208 @@ describe("Auction", () => {
 
         expect(abnbcSigner2BalanceAfter.sub(abnbcSigner2BalanceBefore)).to.be.equal(toWad("7"));
         expect(abnbcSigner3BalanceAfter.sub(abnbcSigner3BalanceBefore)).to.be.equal(toWad("3"));
+
+        const sale = await clip.sales(auctionId);
+        expect(sale.pos).to.equal(0);
+        expect(sale.tab).to.equal(0);
+        expect(sale.lot).to.equal(0);
+        expect(sale.tic).to.equal(0);
+        expect(sale.top).to.equal(0);
+        expect(sale.usr).to.equal(ethers.constants.AddressZero);
+      });
+    });
+
+    xdescribe("with helioProvider", () => {
+      const collateral2 = toBytes32("ceaBNBc");
+
+      let helioProvider: MockHelioProvider;
+      let ceaBNBc: MockERC20;
+      let hBNB: MockERC20;
+      // let ceaBNBcJoin: GemJoin;
+      let oracle2: Oracle;
+
+      beforeEach("setup for helioProvider", async () => {
+        const HelioProvider = await ethers.getContractFactory("MockHelioProvider");
+        const CeaBNBc = await ethers.getContractFactory("MockERC20");
+        const HBNB = await ethers.getContractFactory("MockERC20");
+        const Clipper = await ethers.getContractFactory("Clipper");
+        const GemJoin = await ethers.getContractFactory("GemJoin");
+        const Oracle = await ethers.getContractFactory("Oracle"); // Mock Oracle
+
+        ceaBNBc = await CeaBNBc.deploy("ceaBNBc", "ceaBNBc");
+        await ceaBNBc.deployed();
+        const ceaBNBcJoin = await GemJoin.connect(deployer).deploy(
+          vat.address,
+          collateral2,
+          ceaBNBc.address
+        );
+        await ceaBNBcJoin.deployed();
+        hBNB = await HBNB.deploy("HBNB", "hBNB");
+        await hBNB.deployed();
+        helioProvider = await HelioProvider.deploy(
+          hBNB.address,
+          ceaBNBc.address,
+          interaction.address
+        );
+        await helioProvider.deployed();
+        oracle2 = await Oracle.connect(deployer).deploy();
+        await oracle2.deployed();
+        clip = await Clipper.connect(deployer).deploy(
+          vat.address,
+          spot.address,
+          dog.address,
+          collateral2
+        );
+        await clip.deployed();
+        // configure vat
+        await vat.connect(deployer).rely(clip.address);
+        await vat
+          .connect(deployer)
+          ["file(bytes32,bytes32,uint256)"](collateral2, toBytes32("line"), toRad("2000000"));
+        await vat
+          .connect(deployer)
+          ["file(bytes32,bytes32,uint256)"](collateral2, toBytes32("dust"), toRad("1"));
+        // configure dog
+        await dog.connect(deployer).rely(clip.address);
+        await dog
+          .connect(deployer)
+          ["file(bytes32,bytes32,address)"](collateral2, toBytes32("clip"), clip.address);
+        await dog
+          .connect(deployer)
+          ["file(bytes32,bytes32,uint256)"](collateral2, toBytes32("chop"), toWad("1.13"));
+        await dog
+          .connect(deployer)
+          ["file(bytes32,bytes32,uint256)"](collateral2, toBytes32("hole"), toRad("10000000"));
+        await dog
+          .connect(deployer)
+          ["file(bytes32,bytes32,address)"](collateral2, toBytes32("clip"), clip.address);
+
+        // configure clip
+        await clip.connect(deployer).rely(dog.address);
+        await clip.connect(deployer)["file(bytes32,uint256)"](toBytes32("buf"), toRay("1.2"));
+        await clip.connect(deployer)["file(bytes32,uint256)"](toBytes32("tail"), "1800");
+        await clip.connect(deployer)["file(bytes32,uint256)"](toBytes32("cusp"), toRay("0.3"));
+        await clip.connect(deployer)["file(bytes32,uint256)"](toBytes32("chip"), toWad("0.02"));
+        await clip.connect(deployer)["file(bytes32,uint256)"](toBytes32("tip"), toRad("100"));
+
+        await clip.connect(deployer)["file(bytes32,address)"](toBytes32("vow"), vow.address);
+        await clip.connect(deployer)["file(bytes32,address)"](toBytes32("calc"), abacus.address);
+
+        // configure helio rewards
+        await rewards.initPool(ceaBNBc.address, collateral2, "1000000001847694957439350500"); //6%
+
+        // configure oracle
+        const collateral2Price = toWad("400");
+        await oracle2.connect(deployer).setPrice(collateral2Price);
+
+        // configure spot
+        await spot
+          .connect(deployer)
+          ["file(bytes32,bytes32,address)"](collateral2, toBytes32("pip"), oracle2.address);
+        await spot
+          .connect(deployer)
+          ["file(bytes32,bytes32,uint256)"](
+            collateral2,
+            toBytes32("mat"),
+            "1250000000000000000000000000"
+          ); // Liquidation Ratio
+        await spot.connect(deployer).poke(collateral2);
+
+        // configure jug
+        const proxyLike = await (
+          await (await ethers.getContractFactory("ProxyLike"))
+            .connect(deployer)
+            .deploy(jug.address, vat.address)
+        ).deployed();
+        await jug.connect(deployer).rely(proxyLike.address);
+        await proxyLike.connect(deployer).jugInitFile(collateral, toBytes32("duty"), "0");
+
+        // configure interaction
+        await interaction
+          .connect(deployer)
+          .setCollateralType(ceaBNBc.address, ceaBNBcJoin.address, collateral2, clip.address);
+        await interaction
+          .connect(deployer)
+          .setHelioProvider(ceaBNBc.address, helioProvider.address);
+      });
+
+      it("auction started as expected", async () => {
+        const dink = toWad("10");
+
+        await helioProvider.connect(signer1).depositBNB({ value: dink });
+
+        const dart = toWad("1000");
+        await interaction.connect(signer1).borrow(ceaBNBc.address, dart);
+
+        const usbBalanceBefore = await usb.balanceOf(deployer.address);
+
+        // change collateral price
+        await oracle2.connect(deployer).setPrice(toWad("124"));
+        await spot.connect(deployer).poke(collateral2);
+        await interaction
+          .connect(deployer)
+          .startAuction(ceaBNBc.address, signer1.address, deployer.address);
+
+        const sale = await clip.sales(1);
+        expect(sale.usr).to.not.be.equal(ethers.constants.AddressZero);
+
+        const hBNBBalance = await hBNB.balanceOf(signer1.address);
+        expect(hBNBBalance.eq(0)).to.be.true;
+
+        const usbBalanceAfter = await usb.balanceOf(deployer.address);
+        const tip = await clip.tip();
+        expect(usbBalanceAfter.gte(usbBalanceBefore.add(tip.div(ray)))).to.be.true;
+      });
+
+      it("auction works as expected", async () => {
+        const dink1 = toWad("10");
+        const dink2 = toWad("1000");
+        const dink3 = toWad("1000");
+        await helioProvider.connect(signer1).depositBNB({ value: dink1 });
+        await helioProvider.connect(signer2).depositBNB({ value: dink2 });
+        await helioProvider.connect(signer3).depositBNB({ value: dink3 });
+
+        const dart1 = toWad("1000");
+        const dart2 = toWad("10000");
+        const dart3 = toWad("10000");
+        await interaction.connect(signer1).borrow(ceaBNBc.address, dart1);
+        await interaction.connect(signer2).borrow(ceaBNBc.address, dart2);
+        await interaction.connect(signer3).borrow(ceaBNBc.address, dart3);
+
+        await oracle2.connect(deployer).setPrice(toWad("124"));
+        await spot.connect(deployer).poke(collateral2);
+
+        const auctionId = BigNumber.from(1);
+
+        let res = await interaction
+          .connect(deployer)
+          .startAuction(ceaBNBc.address, signer1.address, deployer.address);
+        expect(res).to.emit(clip, "Kick");
+
+        await vat.connect(signer2).hope(clip.address);
+        await vat.connect(signer3).hope(clip.address);
+
+        await usb.connect(signer2).approve(auctionProxy.address, toWad("70000000000"));
+        await usb.connect(signer3).approve(auctionProxy.address, toWad("70000000000"));
+
+        await advanceTime(1000);
+
+        const ceaBNBcSigner2BalanceBefore = await ceaBNBc.balanceOf(signer2.address);
+        const ceaBNBcSigner3BalanceBefore = await ceaBNBc.balanceOf(signer3.address);
+
+        await interaction
+          .connect(signer2)
+          .buyFromAuction(ceaBNBc.address, auctionId, toWad("7"), toWad("100"), signer2.address);
+
+        await interaction
+          .connect(signer3)
+          .buyFromAuction(ceaBNBc.address, auctionId, toWad("7"), toWad("100"), signer3.address);
+
+        const ceaBNBcSigner2BalanceAfter = await ceaBNBc.balanceOf(signer2.address);
+        const ceaBNBcSigner3BalanceAfter = await ceaBNBc.balanceOf(signer3.address);
+
+        expect(ceaBNBcSigner2BalanceAfter.sub(ceaBNBcSigner2BalanceBefore)).to.be.equal(toWad("7"));
+        expect(ceaBNBcSigner3BalanceAfter.sub(ceaBNBcSigner3BalanceBefore)).to.be.equal(toWad("3"));
 
         const sale = await clip.sales(auctionId);
         expect(sale.pos).to.equal(0);

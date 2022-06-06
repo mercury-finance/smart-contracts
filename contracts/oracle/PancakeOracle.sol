@@ -1,20 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "../interfaces/IUniswapV2Factory.sol";
-import "../interfaces/IUniswapV2Pair.sol";
+import { IUniswapV2Factory } from "../interfaces/IUniswapV2Factory.sol";
+import { IUniswapV2Pair } from "../interfaces/IUniswapV2Pair.sol";
 
-import "../libraries/FixedPoint.sol";
-import "../libraries/UniswapV2Library.sol";
-import "../libraries/UniswapV2OracleLibrary.sol";
+import { FixedPoint } from "../libraries/FixedPoint.sol";
+import { UniswapV2Library } from "../libraries/UniswapV2Library.sol";
+import { UniswapV2OracleLibrary } from "../libraries/UniswapV2OracleLibrary.sol";
+
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 // sliding window oracle that uses observations collected over a window to provide moving price averages in the past
 // `windowSize` with a precision of `windowSize / granularity`
 // note this is a singleton oracle and only needs to be deployed once per desired parameters, which
 // differs from the simple oracle which must be deployed once per pair.
-contract SlidingWindowOracle {
+contract SlidingWindowOracle is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   using FixedPoint for *;
-  using SafeMath for uint256;
 
   struct Observation {
     uint256 timestamp;
@@ -22,9 +25,9 @@ contract SlidingWindowOracle {
     uint256 price1Cumulative;
   }
 
-  address public immutable factory;
+  address public factory;
   // the desired amount of time over which the moving average should be computed, e.g. 24 hours
-  uint256 public immutable windowSize;
+  uint256 public windowSize;
   // the number of observations stored for each pair, i.e. how many price observations are stored for the window.
   // as granularity increases from 1, more frequent updates are needed, but moving averages become more precise.
   // averages are computed over intervals with sizes in the range:
@@ -32,18 +35,19 @@ contract SlidingWindowOracle {
   // e.g. if the window size is 24 hours, and the granularity is 24, the oracle will return the average price for
   //   the period:
   //   [now - [22 hours, 24 hours], now]
-  uint8 public immutable granularity;
+  uint8 public granularity;
   // this is redundant with granularity and windowSize, but stored for gas savings & informational purposes.
-  uint256 public immutable periodSize;
+  uint256 public periodSize;
 
   // mapping from pair address to a list of price observations of that pair
   mapping(address => Observation[]) public pairObservations;
 
-  constructor(
+  function initialize(
     address factory_,
     uint256 windowSize_,
     uint8 granularity_
-  ) {
+  ) public initializer {
+    __Ownable_init();
     require(granularity_ > 1, "SlidingWindowOracle: GRANULARITY");
     require(
       (periodSize = windowSize_ / granularity_) * granularity_ == windowSize_,
@@ -53,6 +57,8 @@ contract SlidingWindowOracle {
     windowSize = windowSize_;
     granularity = granularity_;
   }
+
+  function _authorizeUpgrade(address newImplementations) internal override onlyOwner {}
 
   // returns the index of the observation corresponding to the given timestamp
   function observationIndexOf(uint256 timestamp) public view returns (uint8 index) {
@@ -162,4 +168,6 @@ contract SlidingWindowOracle {
         );
     }
   }
+
+  uint256[30] private __gap;
 }

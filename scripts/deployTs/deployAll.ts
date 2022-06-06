@@ -81,7 +81,7 @@ const main = async () => {
     await spot.deployed();
 
     // Usb module
-    usb = await Usb.connect(deployer).deploy(97, "USB");
+    usb = await Usb.connect(deployer).deploy(80001, "USB");
     await usb.deployed(); // Stable Coin
     usbJoin = await UsbJoin.connect(deployer).deploy(vat.address, usb.address);
     await usbJoin.deployed();
@@ -171,7 +171,7 @@ const main = async () => {
     };
 
     const jsonAddresses = JSON.stringify(addresses);
-    fs.writeFileSync(`./${network.name}-addresses.json`, jsonAddresses);
+    fs.writeFileSync(`./addresses/${network.name}-addresses.json`, jsonAddresses);
     console.log("Addresses saved!");
   };
 
@@ -290,61 +290,63 @@ const main = async () => {
       .setCollateralType(abnbc.address, abnbcJoin.address, collateral, clip.address);
   };
 
-  // await deployContracts();
+  // abacus = await ethers.getContractAt(
+  //   "LinearDecrease",
+  //   "0x4800533dF79496bA39571c095050B4c277b97B43"
+  // );
+  // vat = await ethers.getContractAt("Vat", "0x6E9F279cCEc00a245535EDa5775a9Af96c4BadCC");
+  // spot = await ethers.getContractAt("Spotter", "0x73256b30025de0d7CE2Ad814ec9E3A5719F371CA");
+  // usb = await ethers.getContractAt("Usb", "0xc0d9AD4F76Aa38F1C27b66f972Ad300b281615B1");
+  // abnbc = (await ethers.getContractAt(
+  //   "aBNBc",
+  //   "0x84238B93080ED03d84E5445486b1f4383AC8d3D5"
+  // )) as ABNBc;
+  // abnbcJoin = await ethers.getContractAt("GemJoin", "0x9659cE0fd43C02a81b6188d01A7318E1A4A0969a");
+  // usbJoin = await ethers.getContractAt("UsbJoin", "0x6Bec5d377dC0a4c72095D208b240d4d8A6e263f2");
+  // jug = await ethers.getContractAt("Jug", "0x2C7924bd50444EB34694591d169E5500A852DceA");
+  // oracle = await ethers.getContractAt("Oracle", "0x4914aefD41288baC209EaC5D0Be96F8E337DE296");
+  // clip = await ethers.getContractAt("Clipper", "0x1bAce88409CF6fF91F7772309A4c16F924395211");
+  // dog = await ethers.getContractAt("Dog", "0x05f4AF9089202E214b81dd5406922B4B339D2B84");
+  // vow = await ethers.getContractAt("Vow", "0x9fcc2170CB0627e352b77009dE1C3E6B60b94c28");
+  // helioToken = await ethers.getContractAt(
+  //   "HelioToken",
+  //   "0x118C9773c38623ffeaeBf3BBCc2b7B54B8fb675A"
+  // );
+  // rewards = await ethers.getContractAt(
+  //   "HelioRewards",
+  //   "0x2269ebFf28F67D0cdc2F978A5c6952cB7b63cb7C"
+  // );
+  // auctionProxy = await ethers.getContractAt(
+  //   "AuctionProxy",
+  //   "0x1bdf9d3548cfbb0620484a89c2f3d40b06c51ea8"
+  // );
+  // interaction = await ethers.getContractAt(
+  //   "DAOInteraction",
+  //   "0xC8337E98c80Cb64151694CaFe18d8A9a2f974e16"
+  // );
+  // jar = await ethers.getContractAt("Jar", "0x32115C72f0ACe60E4A91D6805672EBa6a972fF40");
+  // flap = await ethers.getContractAt("Flapper", "0x0d05049f0CC7FaE71D1e22BA2f56Ee09779D1EEA");
+  // flop = await ethers.getContractAt("Flopper", "0x627BbC3fBfb1225E5aDDf21c7CBF003951FDCF03");
 
-  // await configureAbacus();
-  // await configureOracles();
+  await deployContracts();
+  console.log("deployment config completed");
 
-  abacus = await ethers.getContractAt(
-    "LinearDecrease",
-    "0x4800533dF79496bA39571c095050B4c277b97B43"
-  );
-  vat = await ethers.getContractAt("Vat", "0x6E9F279cCEc00a245535EDa5775a9Af96c4BadCC");
-  spot = await ethers.getContractAt("Spotter", "0x73256b30025de0d7CE2Ad814ec9E3A5719F371CA");
-  usb = await ethers.getContractAt("Usb", "0xc0d9AD4F76Aa38F1C27b66f972Ad300b281615B1");
-  abnbc = (await ethers.getContractAt(
-    "aBNBc",
-    "0x84238B93080ED03d84E5445486b1f4383AC8d3D5"
-  )) as ABNBc;
-  abnbcJoin = await ethers.getContractAt("GemJoin", "0x9659cE0fd43C02a81b6188d01A7318E1A4A0969a");
-  usbJoin = await ethers.getContractAt("UsbJoin", "0x6Bec5d377dC0a4c72095D208b240d4d8A6e263f2");
-  jug = await ethers.getContractAt("Jug", "0x2C7924bd50444EB34694591d169E5500A852DceA");
-  oracle = await ethers.getContractAt("Oracle", "0x4914aefD41288baC209EaC5D0Be96F8E337DE296");
-  clip = await ethers.getContractAt("Clipper", "0x1bAce88409CF6fF91F7772309A4c16F924395211");
-  dog = await ethers.getContractAt("Dog", "0x05f4AF9089202E214b81dd5406922B4B339D2B84");
-  vow = await ethers.getContractAt("Vow", "0x9fcc2170CB0627e352b77009dE1C3E6B60b94c28");
-  helioToken = await ethers.getContractAt(
-    "HelioToken",
-    "0x118C9773c38623ffeaeBf3BBCc2b7B54B8fb675A"
-  );
-  rewards = await ethers.getContractAt(
-    "HelioRewards",
-    "0x2269ebFf28F67D0cdc2F978A5c6952cB7b63cb7C"
-  );
-  auctionProxy = await ethers.getContractAt(
-    "AuctionProxy",
-    "0x1bdf9d3548cfbb0620484a89c2f3d40b06c51ea8"
-  );
-  interaction = await ethers.getContractAt(
-    "DAOInteraction",
-    "0xC8337E98c80Cb64151694CaFe18d8A9a2f974e16"
-  );
-  jar = await ethers.getContractAt("Jar", "0x32115C72f0ACe60E4A91D6805672EBa6a972fF40");
-  flap = await ethers.getContractAt("Flapper", "0x0d05049f0CC7FaE71D1e22BA2f56Ee09779D1EEA");
-  flop = await ethers.getContractAt("Flopper", "0x627BbC3fBfb1225E5aDDf21c7CBF003951FDCF03");
-
-  // await configureVat();
-  // console.log("vat config completed");
-  // await configureSpot();
-  // console.log("spot config completed");
-  // await configureUSB();
-  // console.log("usb config completed");
-  // await configureDog();
-  // console.log("dog config completed");
-  // await configureClippers();
-  // console.log("clipper config completed");
-  // await configureVow();
-  // console.log("vow config completed");
+  await configureAbacus();
+  console.log("abacus config completed");
+  await configureOracles();
+  console.log("oracle config completed");
+  await configureVat();
+  console.log("vat config completed");
+  await configureSpot();
+  console.log("spot config completed");
+  await configureUSB();
+  console.log("usb config completed");
+  await configureDog();
+  console.log("dog config completed");
+  await configureClippers();
+  console.log("clipper config completed");
+  await configureVow();
+  console.log("vow config completed");
   await configureJug();
   console.log("jug config completed");
   await configureHelioToken();
